@@ -1,3 +1,4 @@
+
 import type { Brick } from '@/types';
 import bricksData from '@/data/bricks.json';
 import { format } from 'date-fns';
@@ -7,11 +8,14 @@ export const getTodayString = (): string => {
 };
 
 export const getInitialBricks = (): { allBricks: Brick[] } => {
-  const allBricks: Brick[] = (bricksData as Brick[]).map(b => ({
+  const allBricks: Brick[] = (bricksData as any[]).map(b => ({
     ...b,
-    id: typeof b.id === 'string' ? parseInt(b.id, 10) : b.id
+    id: String(b.id),
+    userId: 'sample-user' // Assign a generic ID for sample data
   }));
 
   // Return all bricks, the filtering will be done in the component now.
   return { allBricks };
 };
+
+    

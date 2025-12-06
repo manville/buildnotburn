@@ -16,7 +16,7 @@ import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { getTodayString } from "@/lib/mock-data";
+import { getTodayString, getInitialBricks } from "@/lib/mock-data";
 import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 
@@ -98,14 +98,23 @@ export default function Home() {
       setAppState('building');
       setPlan('trial'); 
       setMaxBricks(TRIAL_MAX_BRICKS);
-      // If there are no bricks in state, user is new, so don't load mocks.
-      if (allHistoricalBricks.length === 0) {
-        setAllHistoricalBricks([]);
+      
+      // For new/anonymous users, load sample data to populate the wall
+      // but only if they haven't started adding their own local bricks.
+      const localBricks = allHistoricalBricks.filter(b => b.userId === 'anonymous');
+      if (localBricks.length === 0) {
+        const { allBricks: mockBricks } = getInitialBricks();
+        setAllHistoricalBricks(mockBricks);
       }
       return;
     }
     if (!db) {
       return;
+    }
+
+    // If we are transitioning from anonymous to logged-in, clear sample bricks
+    if (allHistoricalBricks.some(b => b.userId !== user.uid)) {
+        setAllHistoricalBricks([]);
     }
 
     syncAnonymousBricks(user.uid);
@@ -176,12 +185,17 @@ export default function Home() {
   };
 
   const todayString = getTodayString();
-  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString);
-  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString);
+  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : b.userId === 'anonymous'));
+  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : b.userId === 'anonymous'));
 
   const addBrick = async (text: string) => {
     if (!text.trim()) return;
     const upperCaseText = text.toUpperCase();
+
+    // On first brick add by anonymous user, clear sample data.
+    if (!user && !allHistoricalBricks.some(b => b.userId === 'anonymous')) {
+      setAllHistoricalBricks([]);
+    }
 
     if (!user) {
       if (todaysIncompleteBricks.length >= TRIAL_MAX_BRICKS) {
@@ -293,8 +307,11 @@ export default function Home() {
 
   const burnPile = allHistoricalBricks.filter(b => {
     const isToday = b.date === todayString;
-    return !isToday && !b.isCompleted;
+    // For anonymous users, only show bricks they've created. For logged in, only their bricks.
+    const isOwner = user ? b.userId === user.uid : b.userId === 'anonymous';
+    return !isToday && !b.isCompleted && isOwner;
   });
+
 
   const isAtBrickLimit = 
       (!user && todaysIncompleteBricks.length >= TRIAL_MAX_BRICKS) ||

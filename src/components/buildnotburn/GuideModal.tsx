@@ -7,11 +7,24 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Check, Flame, GanttChart, Brick, Building } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 interface GuideModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const QuickGuideItem = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
+    <div className="flex gap-4 items-start">
+        <div className="text-primary mt-1">{icon}</div>
+        <div>
+            <h4 className="font-bold font-code uppercase">{title}</h4>
+            <p className="text-sm text-foreground/80">{description}</p>
+        </div>
+    </div>
+)
+
 
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   return (
@@ -27,6 +40,19 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="space-y-6 font-body text-foreground/90">
+
+             <section>
+                <h3 className="font-headline text-xl text-primary mb-3">SYSTEM OVERVIEW</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <QuickGuideItem icon={<Building className="h-5 w-5"/>} title="Build List" description="Your priority tasks for today. Limited by your daily energy audit." />
+                    <QuickGuideItem icon={<Flame className="h-5 w-5"/>} title="Burn Pile" description="Tasks that are de-prioritized. Move a brick here to make room for something new." />
+                    <QuickGuideItem icon={<Check className="h-5 w-5"/>} title="Complete Brick" description="Marks a task as done and adds it to your permanent wall." />
+                    <QuickGuideItem icon={<GanttChart className="h-5 w-5"/>} title="The Wall" description="Your visual history of completed work. Proof of your consistent effort." />
+                </div>
+            </section>
+
+            <Separator />
+
             <section>
               <h3 className="font-headline text-xl text-primary mb-2">THE CORE PHILOSOPHY</h3>
               <p>We are taught that exhaustion is a trophy. We are told that if we aren’t suffering, we aren’t succeeding. This is the "Burn" mindset. It treats your energy like a cheap commodity to be used up every single day.</p>
@@ -49,16 +75,6 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               <p className="mt-2">
                 <span className="font-bold text-primary">🏗️ Building (The Bricks):</span> These tasks compound. They create assets that work for you while you sleep. Examples: Writing code, recording a video, drafting a proposal, automating a manual process.
               </p>
-            </section>
-
-            <section>
-              <h3 className="font-headline text-xl text-primary mb-2">HOW TO USE THE APP</h3>
-              <ol className="list-decimal list-inside space-y-2">
-                <li><span className="font-bold">Check Your Energy:</span> Be honest. Your energy determines your capacity. Match your workload to your state.</li>
-                <li><span className="font-bold">The Build List:</span> Write down your Bricks. Be specific. "Code the landing page hero section" is a good brick.</li>
-                <li><span className="font-bold">The Burn Pile:</span> If a new urgent task appears, move an existing Brick to the Burn Pile to make room. This forces prioritization.</li>
-                <li><span className="font-bold">The Firebreak:</span> When your bricks are laid, take a break. A mental firebreak stops work stress from spreading into your personal life. Then decide if you are truly done for the day.</li>
-              </ol>
             </section>
 
              <p className="text-center font-bold text-primary pt-4">"If you don't prioritize your life, someone else will."</p>
