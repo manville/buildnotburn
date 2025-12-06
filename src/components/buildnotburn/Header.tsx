@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { SignInModal } from './SignInModal';
 
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
@@ -35,12 +34,12 @@ interface HeaderProps {
     plan: 'trial' | 'builder' | 'architect' | null;
     onLogout: () => void;
     onOpenGuide: () => void;
+    onSignIn: () => void;
 }
 
 
-export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuide }) => {
+export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuide, onSignIn }) => {
     const isPaidUser = plan === 'builder' || plan === 'architect';
-    const [isSignInModalOpen, setIsSignInModalOpen] = React.useState(false);
 
     return (
         <>
@@ -86,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuid
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <Button variant="outline" onClick={() => setIsSignInModalOpen(true)}>
+                        <Button variant="outline" onClick={onSignIn}>
                             <LogIn className="mr-2 h-4 w-4" />
                             Sign In
                         </Button>
@@ -117,7 +116,6 @@ export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuid
                     )}
                 </div>
             </header>
-            <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
         </>
     );
 };

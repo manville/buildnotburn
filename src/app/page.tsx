@@ -20,6 +20,7 @@ import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building, Flame } from "lucide-react";
 import Link from "next/link";
+import { SignInModal } from "@/components/buildnotburn/SignInModal";
 
 
 type AppState = 'loading' | 'paywall' | 'audit' | 'building';
@@ -39,6 +40,8 @@ export default function Home() {
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -67,10 +70,7 @@ export default function Home() {
           // Check if guide should be shown for new paid users
           const hasSeenGuide = localStorage.getItem('hasSeenGuide');
           const isPaid = userPlan === 'builder' || userPlan === 'architect';
-          if (!hasSeenGuide && isPaid) {
-            setIsGuideOpen(true);
-          }
-  
+          
           // Set app state based on plan
           if (userPlan === 'builder') {
             setAppState('audit');
@@ -314,27 +314,30 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-      <Header user={user} plan={plan} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} />
-      <div className="w-full flex-grow">
-        {renderContent()}
-      </div>
-      <Wall bricks={allHistoricalBricks} />
-      <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
-        <ThemeSwitcher />
-        <div className="flex items-center justify-center gap-4">
-            <Link href="https://withcabin.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy</Link>
-            {isPaidUser && <button onClick={() => setIsGuideOpen(true)} className="hover:text-primary transition-colors">The Guide</button>}
-            <Link href="mailto:support@buildnotburn.com" className="hover:text-primary transition-colors">Contact</Link>
+    <>
+      <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
+        <Header user={user} plan={plan} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} onSignIn={() => setIsSignInModalOpen(true)} />
+        <div className="w-full flex-grow">
+          {renderContent()}
         </div>
-        <div>
-            <p>
-            &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
-            </p>
-            <p>The Sustainable System for Long-Term Creators.</p>
-        </div>
-      </footer>
-      <GuideModal isOpen={isGuideOpen} onClose={handleGuideClose} />
-    </main>
+        <Wall bricks={allHistoricalBricks} />
+        <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
+          <ThemeSwitcher />
+          <div className="flex items-center justify-center gap-4">
+              <Link href="https://withcabin.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy</Link>
+              {isPaidUser && <button onClick={() => setIsGuideOpen(true)} className="hover:text-primary transition-colors">The Guide</button>}
+              <Link href="mailto:support@buildnotburn.com" className="hover:text-primary transition-colors">Contact</Link>
+          </div>
+          <div>
+              <p>
+              &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
+              </p>
+              <p>The Sustainable System for Long-Term Creators.</p>
+          </div>
+        </footer>
+        <GuideModal isOpen={isGuideOpen} onClose={handleGuideClose} />
+      </main>
+      <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
+    </>
   );
 }
