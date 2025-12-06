@@ -12,9 +12,6 @@ import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
-import { createCheckoutSession } from '@/ai/flows/stripe-checkout-flow';
-import { loadStripe, type Stripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -44,7 +41,7 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 
-const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
+export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -107,30 +104,13 @@ const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         }
 
         setIsLoading(true);
-
-        try {
-            const priceId = plans[plan][billingCycle].priceId;
-            const { sessionId, url } = await createCheckoutSession({
-                priceId,
-                email: user.email!,
-                userId: user.uid,
-                plan: plan
-            });
-
-            if (url) {
-                window.location.href = url;
-            } else {
-                throw new Error("Could not create Stripe Checkout session.");
-            }
-        } catch (error: any) {
-            console.error("Error creating checkout session:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Could not proceed to checkout. Please try again later.',
-            });
-            setIsLoading(false);
-        }
+        // Replace this with your Lemon Squeezy checkout logic
+        console.log(`User ${user.uid} selected ${plan} plan (${billingCycle})`);
+        toast({
+            title: "Redirecting to checkout...",
+            description: "Please implement your Lemon Squeezy logic here.",
+        });
+        setIsLoading(false);
     };
 
 
@@ -315,35 +295,3 @@ const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     </div>
   );
 };
-
-
-export const Paywall: FC<PaywallProps> = (props) => {
-    const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
-
-    useState(() => {
-        if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-            setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY));
-        }
-    });
-
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-        return (
-            <div className="max-w-6xl mx-auto my-8 text-center">
-                <h2 className="font-headline text-2xl text-destructive-foreground">Stripe Not Configured</h2>
-                <p className="text-muted-foreground font-code mt-2">
-                    The Stripe publishable key is missing. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your environment variables.
-                </p>
-            </div>
-        );
-    }
-    
-    if (!stripePromise) {
-        return <div className="text-center font-code text-muted-foreground">Loading payment options...</div>;
-    }
-
-    return (
-        <Elements stripe={stripePromise}>
-            <PaywallContent {...props} />
-        </Elements>
-    )
-}
