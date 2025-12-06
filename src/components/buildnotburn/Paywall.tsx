@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
 import { createCheckoutSession } from '@/ai/flows/stripe-checkout-flow';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 
 type Plan = 'trial' | 'builder' | 'architect';
@@ -43,7 +43,6 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
@@ -318,8 +317,35 @@ const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
 };
 
 
-export const Paywall: FC<PaywallProps> = (props) => (
-    <Elements stripe={stripePromise}>
-        <PaywallContent {...props} />
-    </Elements>
-)
+export const Paywall: FC<PaywallProps> = (props) => {
+    const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+
+    useState(() => {
+        if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+            setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY));
+        }
+    });
+
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        return (
+            <div className="max-w-6xl mx-auto my-8 text-center">
+                <h2 className="font-headline text-2xl text-destructive-foreground">Stripe Not Configured</h2>
+                <p className="text-muted-foreground font-code mt-2">
+                    The Stripe publishable key is missing. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your environment variables.
+                </p>
+            </div>
+        );
+    }
+    
+    if (!stripePromise) {
+        return <div className="text-center font-code text-muted-foreground">Loading payment options...</div>;
+    }
+
+    return (
+        <Elements stripe={stripePromise}>
+            <PaywallContent {...props} />
+        </Elements>
+    )
+}
+
+    
