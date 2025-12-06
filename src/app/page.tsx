@@ -14,6 +14,7 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { getTodayString, getYesterdayString, generateMockWallBricks } from "@/lib/mock-data";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
