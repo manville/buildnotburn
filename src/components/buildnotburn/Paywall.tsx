@@ -150,7 +150,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
       <div className="text-center mb-12">
         <h1 className="font-headline text-4xl sm:text-5xl uppercase tracking-wider">Choose Your System</h1>
         <p className="font-code text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Start for free with the newsletter, or purchase a plan to get the guide, the app, and the system.
+          Start for free by subscribing to the newsletter, or purchase a plan to get the complete system.
         </p>
       </div>
 
@@ -170,7 +170,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         {/* Free Newsletter */}
         <Card className="border-border/60">
           <CardHeader className="pb-4">
-            <CardTitle className="font-headline text-2xl uppercase">The Newsletter</CardTitle>
+            <CardTitle className="font-headline text-2xl uppercase">The Community</CardTitle>
             <CardDescription className="font-code text-sm">Insights on sustainable creativity.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -194,8 +194,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" onClick={() => onPlanSelect('trial', false)}>
-              Continue with Free Trial
+             <Button variant="outline" className="w-full" disabled>
+              Available via Newsletter Signup
             </Button>
           </CardFooter>
         </Card>
@@ -217,7 +217,11 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             <ul className="space-y-2 text-sm text-foreground h-[180px]">
                <li className="flex items-center gap-2">
                 <BookCheck className="h-4 w-4 text-primary" />
-                <span className="font-medium">The Full Guide & PDF Blueprint</span>
+                <span className="font-medium">The Field Guide (Digital)</span>
+              </li>
+               <li className="flex items-center gap-2">
+                <BookCheck className="h-4 w-4 text-primary" />
+                <span className="font-medium">The Daily Worksheet (Printable)</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
@@ -226,10 +230,6 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span>Daily brick limit via Energy Audit</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Cloud data sync & The Wall</span>
               </li>
                <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />

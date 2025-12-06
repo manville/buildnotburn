@@ -1,11 +1,11 @@
 
-# Lemon Squeezy Setup Guide for BuildNotBurn
+# Lemon Squeezy & Firebase Setup Guide for BuildNotBurn
 
-Follow these steps to configure your Lemon Squeezy account to work seamlessly with your BuildNotBurn application. You will need to create products, find their variant IDs, and set up a webhook.
+Follow these steps to configure your Lemon Squeezy and Firebase accounts to work seamlessly with your BuildNotBurn application.
 
 ---
 
-## 1. Create Your Products and Variants
+## 1. Lemon Squeezy: Create Your Products and Variants
 
 You need to create three products in your Lemon Squeezy store: two paid subscription plans (which include the guide) and one free newsletter signup.
 
@@ -16,7 +16,7 @@ You need to create three products in your Lemon Squeezy store: two paid subscrip
 3.  Click **New Product**.
 4.  **Name**: `Builder Plan`
 5.  **Pricing**: Select `Subscription`.
-6.  **Files**: Upload your Guide PDF here. It will be delivered automatically to customers after purchase. This is how you "sell" the guide.
+6.  **Files**: Upload your "Field Guide" and "Daily Worksheet" PDFs here. They will be delivered automatically to customers after purchase.
 7.  Click **Save Product**.
 
 Now, add the pricing variants:
@@ -44,7 +44,7 @@ Now, add the pricing variants:
 Repeat the process from Step 1 for the Architect plan.
 
 1.  Create a new product named `Architect Plan`.
-2.  Make it a `Subscription` and upload the same Guide PDF to the **Files** section.
+2.  Make it a `Subscription` and upload the same Guide and Worksheet PDFs to the **Files** section.
 3.  **Monthly Variant**:
     *   **Name**: `Monthly`
     *   **Price**: `$15.00`
@@ -70,7 +70,7 @@ This product will be used to capture emails for your newsletter.
 
 ---
 
-## 2. Create the Webhook
+## 2. Lemon Squeezy: Create the Webhook
 
 The webhook is how Lemon Squeezy tells your app that a payment was successful.
 
@@ -84,17 +84,18 @@ The webhook is how Lemon Squeezy tells your app that a payment was successful.
 
 ---
 
-## 3. Find Your API Key and Store ID
+## 3. Firebase: Get Service Account Credentials
 
-1.  **API Key**:
-    *   Go to **Settings > API**.
-    *   Click **New API Key**. Give it a name like "BuildNotBurn App".
-    *   Copy the generated API key.
+Your webhook needs to securely communicate with your Firestore database. To do this, you need a "service account," which is a special credential for server-to-server communication.
 
-2.  **Store ID**:
-    *   Go to **Settings > Stores**.
-    *   Click on your store name.
-    *   You will see the Store ID listed. Copy it.
+1.  Open the [Google Cloud Console](https://console.cloud.google.com/).
+2.  Select your Firebase project from the project dropdown at the top of the page.
+3.  In the search bar, type **"IAM & Admin"** and select **"IAM & Admin > Service Accounts"**.
+4.  Find the service account with the role **"Firebase Admin SDK Administrator Service Agent"**. Its email will look something like `firebase-adminsdk-...@...gserviceaccount.com`.
+5.  Click the **three-dot menu (⋮)** on the right side of that service account and select **"Manage keys"**.
+6.  Click **"Add Key"** > **"Create new key"**.
+7.  Choose **JSON** as the key type and click **"Create"**.
+8.  A JSON file will be downloaded to your computer. **This file is your `GOOGLE_APPLICATION_CREDENTIALS`. Guard it like a password.**
 
 ---
 
@@ -105,15 +106,17 @@ Now, open the `.env` file in your project and fill in all the values you just co
 ```env
 # .env
 
-# Lemon Squeezy API Key (for creating checkouts)
+# === Lemon Squeezy ===
+
+# API Key (for creating checkouts)
 # Found in: Settings > API
 LEMONSQUEEZY_API_KEY="REPLACE_WITH_YOUR_API_KEY"
 
-# Your Lemon Squeezy Store ID
+# Your Store ID
 # Found in: Settings > Stores
 LEMONSQUEEZY_STORE_ID="REPLACE_WITH_YOUR_STORE_ID"
 
-# Lemon Squeezy Webhook Secret (for verifying incoming requests)
+# Webhook Secret (for verifying incoming requests)
 # Found in: Settings > Webhooks (after creating one)
 LEMONSQUEEZY_WEBHOOK_SECRET="REPLACE_WITH_YOUR_WEBHOOK_SIGNING_SECRET"
 
@@ -129,8 +132,14 @@ NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID="REPLACE_WITH_BUILDER_ANNUA
 NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID="REPLACE_WITH_ARCHITECT_MONTHLY_VARIANT_ID"
 NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID="REPLACE_WITH_ARCHITECT_ANNUALLY_VARIANT_ID"
 
-# Note: You also need to add your Firebase config and Google Application Credentials for the webhook to write to Firestore.
-# GOOGLE_APPLICATION_CREDENTIALS="..."
+# === Firebase ===
+
+# Firebase Service Account JSON (for server-side webhook)
+# This is the entire content of the JSON file you downloaded from Google Cloud.
+# It needs to be a single-line string. You can use an online "JSON to single line" converter.
+# Example: '{"type": "service_account", "project_id": "...", ...}'
+GOOGLE_APPLICATION_CREDENTIALS='REPLACE_WITH_YOUR_SINGLE_LINE_JSON_CREDENTIALS'
+
 ```
 
-After you have completed these steps, your application will be fully connected to Lemon Squeezy.
+After you have completed these steps, your application will be fully connected and ready for production.
