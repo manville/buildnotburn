@@ -19,6 +19,9 @@ import { signOut } from 'firebase/auth';
 import { getTodayString, getYesterdayString, getInitialBricks } from "@/lib/mock-data";
 import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info, Building, Flame } from "lucide-react";
+
 
 type AppState = 'paywall' | 'audit' | 'building';
 type Plan = 'trial' | 'builder' | 'architect';
@@ -336,7 +339,20 @@ export default function Home() {
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
             <div>
-              <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="font-headline text-2xl text-primary">BUILDING</h2>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Info className="h-4 w-4 text-primary/50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                            <h4 className="font-bold font-code flex items-center gap-2"><Building className="h-4 w-4 text-primary" />BUILDING (THE BRICKS)</h4>
+                            <p className="text-xs text-foreground/80 mt-1">These tasks compound. They create assets that work for you while you sleep. Examples: Writing code, recording a video, drafting a proposal, automating a manual process.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+              </div>
               <BrickList 
                 bricks={todaysIncompleteBricks} 
                 completeBrick={completeBrick} 
@@ -347,7 +363,20 @@ export default function Home() {
               />
             </div>
             <div>
-              <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">THE BURN PILE</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="font-headline text-2xl text-muted-foreground/50">THE BURN PILE</h2>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground/50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                            <h4 className="font-bold font-code flex items-center gap-2"><Flame className="h-4 w-4 text-amber-500" />BURNING (THE GRAVEL)</h4>
+                            <p className="text-xs text-foreground/80 mt-1">These tasks maintain the status quo. They feel productive because they are "busy," but they vanish as soon as you do them. Examples: Answering non-critical emails, Slack scrolling, organizing files, "researching" without output.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+              </div>
               <BrickList bricks={burnPile} variant="burn" />
             </div>
           </div>
@@ -378,7 +407,3 @@ export default function Home() {
     </main>
   );
 }
-
-    
-
-    
