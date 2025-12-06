@@ -9,6 +9,7 @@ import { z } from 'zod';
 import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+require('dotenv').config();
 
 const CreateCheckoutSessionInputSchema = z.object({
     priceId: z.string().describe('The ID of the Stripe price object.'),
