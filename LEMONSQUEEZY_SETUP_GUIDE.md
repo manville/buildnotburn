@@ -98,7 +98,20 @@ The webhook is how Lemon Squeezy tells your app that a payment was successful.
 
 ---
 
-## 4. Firebase: Get Service Account Credentials
+## 4. Firebase: Configure Your Project
+
+### Step 1: Enable Authentication Providers
+
+For users to sign in, you must enable the sign-in methods in Firebase.
+
+1.  Open your [Firebase Project](https://console.firebase.google.com/).
+2.  Navigate to **Build > Authentication**.
+3.  Click the **Sign-in method** tab.
+4.  In the provider list, you must enable two providers:
+    *   **Email/Password**: Click it, toggle the **Enable** switch, and click **Save**. This is required for email link sign-in to work.
+    *   **Google**: Click it, toggle the **Enable** switch, select a project support email, and click **Save**.
+
+### Step 2: Get Service Account Credentials
 
 Your webhook needs to securely communicate with your Firestore database. To do this, you need a "service account," which is a special credential for server-to-server communication.
 
