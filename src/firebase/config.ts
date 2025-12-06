@@ -6,10 +6,10 @@
 // If you are using the demo project, you can ignore this file.
 
 const firebaseConfig = {
-  projectId: "studio-7548244915-60968",
+  projectId: "studio-7548244915-aa0e7",
   appId: "1:1040599678886:web:a72ae7f50af2747a119967",
   apiKey: "AIzaSyBLXs0P2K9TKzEE-tOreXyNyjgVSrjby4c",
-  authDomain: "studio-7548244915-60968.firebaseapp.com",
+  authDomain: "studio-7548244915-aa0e7.firebaseapp.com",
   messagingSenderId: "1040599678886"
 };
 
