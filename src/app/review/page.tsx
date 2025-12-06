@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useUser, useFirestore } from '@/firebase';
@@ -109,5 +108,3 @@ export default function ReviewPage() {
         </main>
     );
 }
-
-    

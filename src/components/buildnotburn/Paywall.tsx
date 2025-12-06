@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, type FC, type FormEvent } from 'react';
+import { useState, type FC } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Check, BookCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
-import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { getOrCreateUser, signInWithGoogle } from '@/firebase/auth';
+import { signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { SignInModal } from './SignInModal';
 
 type Plan = 'trial' | 'builder' | 'architect';
@@ -74,11 +73,12 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
 
   const handleGoogleSignupAndCheckout = async () => {
     if (!selectedPlan) return;
+    setIsLoading('google');
     try {
         const credential = await signInWithGoogle();
         const loggedInUser = credential.user;
         await getOrCreateUser(loggedInUser);
-        processCheckout(selectedPlan.plan, selectedPlan.cycle, loggedInUser.uid, loggedInUser.email!, loggedInUser.displayName || '');
+        await processCheckout(selectedPlan.plan, selectedPlan.cycle, loggedInUser.uid, loggedInUser.email!, loggedInUser.displayName || '');
     } catch(error: any) {
         console.error("Google Sign-In failed", error);
         toast({
@@ -86,6 +86,8 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             title: "Sign-Up Error",
             description: "Could not sign up with Google. Please try again or use the email option."
         })
+    } finally {
+        setIsLoading(false);
     }
   }
 

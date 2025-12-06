@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -82,6 +81,8 @@ export default function Home() {
                     setMaxBricks(TRIAL_MAX_BRICKS);
                 }
             } else {
+                // This might happen briefly on first login, before user doc is created.
+                // We default to a loading-like state or a sensible default.
                 setPlan('trial');
                 setAppState('building');
                 setMaxBricks(TRIAL_MAX_BRICKS);
@@ -89,7 +90,7 @@ export default function Home() {
         }, (error) => {
             console.error("Error fetching user data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-            setAppState('paywall');
+            setAppState('paywall'); // Fallback to paywall on error
         });
 
         const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
@@ -112,6 +113,7 @@ export default function Home() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      setAppState('paywall');
     }
   };
 
@@ -336,5 +338,3 @@ export default function Home() {
     </main>
   );
 }
-
-    

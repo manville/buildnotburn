@@ -27,8 +27,8 @@ const GoogleIcon = () => (
 interface SignInModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGoogleSignIn: () => Promise<void>;
-  onEmailSubmit: (name: string, email: string) => Promise<void>;
+  onGoogleSignIn?: () => Promise<void>;
+  onEmailSubmit?: (name: string, email: string) => Promise<void>;
   variant?: 'signin' | 'signup';
 }
 
@@ -48,7 +48,11 @@ export const SignInModal: React.FC<SignInModalProps> = ({
 
   const handleGoogleClick = async () => {
     setIsLoading('google');
-    await onGoogleSignIn();
+    if (onGoogleSignIn) {
+        await onGoogleSignIn();
+    } else {
+        await defaultGoogleSignIn();
+    }
     setIsLoading(false);
   };
 
@@ -58,7 +62,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
 
     setIsLoading('email');
     
-    if (isSignup) {
+    if (isSignup && onEmailSubmit) {
         if (!name) {
              toast({ variant: 'destructive', title: 'Name is required' });
              setIsLoading(false);
@@ -110,7 +114,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             {isSignup ? 'Complete Purchase' : 'Sign In'}
           </DialogTitle>
           <DialogDescription>
-            {isSignup ? 'Enter your details to proceed to checkout.' : 'Sign in to access your account.'}
+            {isSignup ? 'Create your account to proceed to checkout.' : 'Sign in to access your account.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -118,7 +122,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           <Button
             variant="outline"
             className="w-full h-12"
-            onClick={onGoogleSignIn ? handleGoogleClick : defaultGoogleSignIn}
+            onClick={handleGoogleClick}
             disabled={!!isLoading}
           >
             {isLoading === 'google' ? (
