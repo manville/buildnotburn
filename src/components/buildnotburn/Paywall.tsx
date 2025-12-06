@@ -53,11 +53,8 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
   const [isLoading, setIsLoading] = useState<boolean | string>(false);
   const { toast } = useToast();
 
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle | 'free'} | null>(null);
 
-  const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   const plans = {
@@ -85,7 +82,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
     } else {
       setSelectedPlan({ plan, cycle });
-      setIsSignInModalOpen(true); // Open the sign-in modal instead of the signup form
+      setIsSignInModalOpen(true); 
     }
   };
 
@@ -104,23 +101,6 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             description: "Could not sign in with Google. Please try again."
         })
     }
-  }
-
-
-  const handleSignupAndCheckout = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedPlan || !signupEmail || !signupName) {
-      toast({
-        variant: "destructive",
-        title: "Missing Information",
-        description: "Please enter your name and email to continue.",
-      });
-      return;
-    }
-    
-    const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, signupEmail, signupName);
   }
 
   const processCheckout = async (plan: Plan, cycle: BillingCycle | 'free', userId: string, email: string, name: string) => {
@@ -143,7 +123,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
         variantId: planDetails.variantId,
         email: email,
         name: plan === 'trial' ? 'Newsletter Subscriber' : name,
-        userId: userId, // This can be a temp ID or a real one
+        userId: userId,
         plan: plan,
       });
 
@@ -282,7 +262,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             </CardContent>
             <CardFooter>
               <Button className="w-full font-bold" onClick={() => handlePlanSelect('builder')} disabled={!!isLoading}>
-                  {isLoading === `builder-${billingCycle}` ? 'Processing...' : (user ? 'Get the System' : 'Sign In to Purchase')}
+                  {isLoading === `builder-${billingCycle}` ? 'Processing...' : 'Get the System'}
               </Button>
             </CardFooter>
           </Card>
@@ -331,7 +311,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             </CardContent>
             <CardFooter>
               <Button variant="secondary" className="w-full" onClick={() => handlePlanSelect('architect')} disabled={!!isLoading}>
-                  {isLoading === `architect-${billingCycle}` ? 'Processing...' : (user ? 'Become an Architect' : 'Sign In to Purchase')}
+                  {isLoading === `architect-${billingCycle}` ? 'Processing...' : 'Become an Architect'}
               </Button>
             </CardFooter>
           </Card>
@@ -342,7 +322,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
         isOpen={isSignInModalOpen} 
         onClose={() => setIsSignInModalOpen(false)}
         onGoogleSignIn={handleGoogleSignInAndCheckout}
-        showEmailNameFields={selectedPlan?.plan !== 'trial'}
+        showEmailNameFields={true}
         onEmailSubmit={async (name, email) => {
             if (!selectedPlan) return;
             const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -352,3 +332,5 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     </>
   );
 };
+
+    
