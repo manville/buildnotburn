@@ -35,12 +35,14 @@ export default function Home() {
   const [maxBricks, setMaxBricks] = useState<number | null>(3);
   const [newBrickText, setNewBrickText] = useState("");
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
 
   useEffect(() => {
+    setIsMounted(true);
     // On first load, check if the user has seen the guide.
     const hasSeenGuide = localStorage.getItem('hasSeenGuide');
     if (!hasSeenGuide) {
@@ -341,17 +343,19 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="font-headline text-2xl text-primary">BUILDING</h2>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Info className="h-4 w-4 text-primary/50" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                            <h4 className="font-bold font-code flex items-center gap-2"><Building className="h-4 w-4 text-primary" />BUILDING (THE BRICKS)</h4>
-                            <p className="text-xs text-foreground/80 mt-1">These tasks compound. They create assets that work for you while you sleep. Examples: Writing code, recording a video, drafting a proposal, automating a manual process.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {isMounted && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Info className="h-4 w-4 text-primary/50" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                                <h4 className="font-bold font-code flex items-center gap-2"><Building className="h-4 w-4 text-primary" />BUILDING (THE BRICKS)</h4>
+                                <p className="text-xs text-foreground/80 mt-1">These tasks compound. They create assets that work for you while you sleep. Examples: Writing code, recording a video, drafting a proposal, automating a manual process.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
               </div>
               <BrickList 
                 bricks={todaysIncompleteBricks} 
@@ -365,17 +369,19 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="font-headline text-2xl text-muted-foreground/50">THE BURN PILE</h2>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Info className="h-4 w-4 text-muted-foreground/50" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                            <h4 className="font-bold font-code flex items-center gap-2"><Flame className="h-4 w-4 text-amber-500" />BURNING (THE GRAVEL)</h4>
-                            <p className="text-xs text-foreground/80 mt-1">These tasks maintain the status quo. They feel productive because they are "busy," but they vanish as soon as you do them. Examples: Answering non-critical emails, Slack scrolling, organizing files, "researching" without output.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {isMounted && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Info className="h-4 w-4 text-muted-foreground/50" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                                <h4 className="font-bold font-code flex items-center gap-2"><Flame className="h-4 w-4 text-amber-500" />BURNING (THE GRAVEL)</h4>
+                                <p className="text-xs text-foreground/80 mt-1">These tasks maintain the status quo. They feel productive because they are "busy," but they vanish as soon as you do them. Examples: Answering non-critical emails, Slack scrolling, organizing files, "researching" without output.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
               </div>
               <BrickList bricks={burnPile} variant="burn" />
             </div>
