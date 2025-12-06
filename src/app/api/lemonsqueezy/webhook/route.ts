@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -9,39 +10,43 @@ function getFirebaseAdminApp(): App {
         return getApps()[0];
     }
 
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // This will only be thrown at runtime if the variable is missing
-        throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
+    const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!serviceAccountString) {
+        console.error('Firebase credentials environment variable is not set.');
+        // This will be caught by the calling function and result in a 500 error
+        throw new Error('Server configuration error: Firebase credentials missing.');
     }
     
     try {
-        const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        const serviceAccount = JSON.parse(serviceAccountString);
         return initializeApp({
             credential: cert(serviceAccount)
         });
     } catch (e: any) {
-        // This will catch the JSON.parse error during build, but allow runtime errors to surface
-        if (process.env.NODE_ENV === 'production') {
-            console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS:', e.message);
-            throw new Error('Server configuration error with Firebase credentials.');
-        }
-        // During build, we can create a dummy app to satisfy the type system
-        // but it won't be used.
-        return initializeApp();
+        console.error('Failed to parse Firebase credentials:', e.message);
+        throw new Error('Server configuration error with Firebase credentials.');
     }
 }
 
 
 export async function POST(req: NextRequest) {
     const webhookSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-        console.error('LEMONSQUEEZY_WEBHOOK_SECRET is not set.');
+    const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+    // Runtime check for environment variables
+    if (!webhookSecret || !serviceAccountString) {
+        console.error('Missing required environment variables for Lemon Squeezy webhook.');
         return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 
     try {
         const rawBody = await req.text();
         const signature = req.headers.get('x-signature') as string;
+
+        if (!signature) {
+            console.error('Webhook request missing x-signature header');
+            return NextResponse.json({ error: 'Signature missing.' }, { status: 401 });
+        }
 
         const hmac = crypto.createHmac('sha256', webhookSecret);
         const digest = Buffer.from(hmac.update(rawBody).digest('hex'), 'hex');
