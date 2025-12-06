@@ -18,6 +18,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp
 import { signOut } from 'firebase/auth';
 import { getTodayString } from "@/lib/mock-data";
 import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
+import { GuideModal } from "@/components/buildnotburn/GuideModal";
 
 type AppState = 'paywall' | 'audit' | 'building';
 type Plan = 'trial' | 'builder' | 'architect';
@@ -30,10 +31,24 @@ export default function Home() {
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(3);
   const [newBrickText, setNewBrickText] = useState("");
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+
+  useEffect(() => {
+    // On first load, check if the user has seen the guide.
+    const hasSeenGuide = localStorage.getItem('hasSeenGuide');
+    if (!hasSeenGuide) {
+      setIsGuideOpen(true);
+    }
+  }, []);
+
+  const handleGuideClose = () => {
+    localStorage.setItem('hasSeenGuide', 'true');
+    setIsGuideOpen(false);
+  }
 
   const syncAnonymousBricks = async (userId: string) => {
     if (!db || allHistoricalBricks.length === 0) return;
@@ -334,7 +349,7 @@ export default function Home() {
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-      <Header user={user} onLogout={handleLogout} />
+      <Header user={user} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} />
       <div className="w-full flex-grow">
         {renderContent()}
       </div>
@@ -349,6 +364,9 @@ export default function Home() {
             <p>The Sustainable System for Long-Term Creators.</p>
         </div>
       </footer>
+      <GuideModal isOpen={isGuideOpen} onClose={handleGuideClose} />
     </main>
   );
 }
+
+    

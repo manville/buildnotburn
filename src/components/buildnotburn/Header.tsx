@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { BookOpen, LogOut, LayoutDashboard } from 'lucide-react';
-import { GuideModal } from './GuideModal';
 import type { User } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -52,12 +51,11 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => (
 interface HeaderProps {
     user: User | null;
     onLogout: () => void;
+    onOpenGuide: () => void;
 }
 
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
-    const [isGuideOpen, setIsGuideOpen] = useState(false);
-
+export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenGuide }) => {
     return (
         <>
             <header className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-12 text-center select-none relative">
@@ -114,13 +112,14 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                     <p className="font-code text-muted-foreground text-sm sm:text-base">
                         The Sustainable System for Long-Term Creators.
                     </p>
-                    <Button variant="link" onClick={() => setIsGuideOpen(true)} className="text-primary/80 hover:text-primary">
+                    <Button variant="link" onClick={onOpenGuide} className="text-primary/80 hover:text-primary">
                         <BookOpen className="mr-2 h-4 w-4"/>
                         Read The Guide
                     </Button>
                 </div>
             </header>
-            <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
         </>
     );
 };
+
+    
