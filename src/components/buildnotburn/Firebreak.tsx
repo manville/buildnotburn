@@ -4,9 +4,9 @@ import type { FC } from 'react';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flame, ShieldCheck, Forward, PlusCircle } from 'lucide-react';
+import { Flame, ShieldCheck, Forward, PlusCircle, MinusCircle, Plus, Minus } from 'lucide-react';
 
-const BREAK_DURATION = 15; // in seconds
+const INITIAL_BREAK_DURATION = 900; // 15 minutes in seconds
 
 interface FirebreakProps {
     onLayMore: () => void;
@@ -14,7 +14,7 @@ interface FirebreakProps {
 
 export const Firebreak: FC<FirebreakProps> = ({ onLayMore }) => {
   const [breakState, setBreakState] = useState<'idle' | 'breaking' | 'finished'>('idle');
-  const [timer, setTimer] = useState(BREAK_DURATION);
+  const [timer, setTimer] = useState(INITIAL_BREAK_DURATION);
   const [isDoneForReal, setIsDoneForReal] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export const Firebreak: FC<FirebreakProps> = ({ onLayMore }) => {
       interval = setInterval(() => {
         setTimer(prev => prev - 1);
       }, 1000);
-    } else if (timer === 0) {
+    } else if (timer <= 0 && breakState === 'breaking') {
       setBreakState('finished');
     }
     return () => clearInterval(interval);
@@ -31,13 +31,23 @@ export const Firebreak: FC<FirebreakProps> = ({ onLayMore }) => {
 
   const handleStartBreak = () => {
     setBreakState('breaking');
-    setTimer(BREAK_DURATION);
   };
   
   const handleLayMore = () => {
     onLayMore();
     setBreakState('idle');
+    setTimer(INITIAL_BREAK_DURATION);
   }
+
+  const handleTimeChange = (amount: number) => {
+    setTimer(prev => Math.max(0, prev + amount));
+  }
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
   
   if (isDoneForReal) {
      return (
@@ -73,12 +83,24 @@ export const Firebreak: FC<FirebreakProps> = ({ onLayMore }) => {
       </CardHeader>
       <CardContent className="font-code text-muted-foreground">
         {breakState === 'idle' && (
-          <p>You&apos;ve laid all your scheduled bricks. A firebreak is recommended.</p>
+          <div>
+            <p>You&apos;ve laid all your scheduled bricks. A firebreak is recommended.</p>
+            <div className="flex items-center justify-center gap-4 my-4">
+                <Button variant="outline" size="icon" onClick={() => handleTimeChange(-300)}>
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <p className="font-bold text-5xl text-primary tabular-nums">{formatTime(timer)}</p>
+                <Button variant="outline" size="icon" onClick={() => handleTimeChange(300)}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground/70">Adjust break time in 5-minute increments.</p>
+          </div>
         )}
         {breakState === 'breaking' && (
           <div>
             <p>Break in progress. Disconnect.</p>
-            <p className="font-bold text-5xl text-primary my-4">{timer}s</p>
+            <p className="font-bold text-5xl text-primary my-4 tabular-nums">{formatTime(timer)}</p>
             <p>Step away from the screen.</p>
           </div>
         )}
@@ -91,9 +113,9 @@ export const Firebreak: FC<FirebreakProps> = ({ onLayMore }) => {
       </CardContent>
       <CardFooter className="flex gap-4">
         {breakState === 'idle' && (
-            <Button onClick={handleStartBreak} className="w-full" size="lg">
+            <Button onClick={handleStartBreak} className="w-full" size="lg" disabled={timer <= 0}>
                 <Forward className="mr-2 h-4 w-4"/>
-                Start a 15-Second Break
+                Start Break
             </Button>
         )}
         {breakState === 'finished' && (
