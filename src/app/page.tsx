@@ -93,10 +93,49 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (userLoading) {
+    if (userLoading || !db) {
       return; 
     }
-    if (!user) {
+
+    // Handle signed-in user
+    if (user) {
+      if (allHistoricalBricks.some(b => b.userId !== user.uid)) {
+          setAllHistoricalBricks([]);
+      }
+      syncAnonymousBricks(user.uid);
+      
+      const userRef = doc(db, `users/${user.uid}`);
+      const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
+  
+      const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
+        const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
+        setAllHistoricalBricks(bricksFromDb);
+      }, (error) => {
+        console.error("Error fetching bricks:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
+      });
+  
+      const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const userPlan: Plan = userData.plan || 'trial';
+          handlePlanSelect(userPlan, false);
+        } else {
+          // New user, default to trial
+          handlePlanSelect('trial', false);
+        }
+      }, (error) => {
+        console.error("Error fetching user data:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
+      });
+  
+      return () => {
+        unsubscribeBricks();
+        unsubscribeUser();
+      }
+    } 
+    // Handle anonymous user
+    else {
       setAppState('building');
       setPlan('trial'); 
       setMaxBricks(TRIAL_MAX_BRICKS);
@@ -106,45 +145,6 @@ export default function Home() {
         const { allBricks: mockBricks } = getInitialBricks();
         setAllHistoricalBricks(mockBricks);
       }
-      return;
-    }
-    if (!db) {
-      return;
-    }
-
-    if (allHistoricalBricks.some(b => b.userId !== user.uid)) {
-        setAllHistoricalBricks([]);
-    }
-
-    syncAnonymousBricks(user.uid);
-    
-    const userRef = doc(db, `users/${user.uid}`);
-    const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
-
-    const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
-      const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
-      setAllHistoricalBricks(bricksFromDb);
-    }, (error) => {
-      console.error("Error fetching bricks:", error);
-      toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
-    });
-
-    const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const userPlan: Plan = userData.plan || 'trial';
-        handlePlanSelect(userPlan, false);
-      } else {
-        handlePlanSelect('trial', false);
-      }
-    }, (error) => {
-      console.error("Error fetching user data:", error);
-      toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-    });
-
-    return () => {
-      unsubscribeBricks();
-      unsubscribeUser();
     }
   }, [user, userLoading, db]);
 
@@ -420,5 +420,7 @@ export default function Home() {
     </main>
   );
 }
+
+    
 
     
