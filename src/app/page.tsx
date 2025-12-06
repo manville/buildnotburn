@@ -13,8 +13,12 @@ import { playSound } from "@/lib/play-sound";
 import { Firebreak } from "@/components/buildnotburn/Firebreak";
 import { getInitialBricks, getTodayString } from "@/lib/mock-data";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
+import { Paywall } from "@/components/buildnotburn/Paywall";
+
+type AppState = 'paywall' | 'audit' | 'building';
 
 export default function Home() {
+  const [appState, setAppState] = useState<AppState>('paywall');
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
   const [newBrickText, setNewBrickText] = useState("");
@@ -26,8 +30,19 @@ export default function Home() {
     setAllHistoricalBricks(allBricks);
   }, []);
 
+  const handlePlanSelect = (plan: 'free' | 'paid') => {
+    if (plan === 'free') {
+      setAppState('audit');
+    } else {
+      // For paid plan, we skip the audit and allow unlimited bricks
+      setMaxBricks(Infinity); 
+      setAppState('building');
+    }
+  };
+
   const handleAuditSubmit = (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
+    setAppState('building');
   };
 
   const todayString = getTodayString();
@@ -37,11 +52,11 @@ export default function Home() {
   const addBrick = (text: string) => {
     if (!text.trim()) return;
 
-    if (maxBricks !== null && todaysIncompleteBricks.length >= maxBricks) {
+    if (maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks) {
       toast({
         variant: "destructive",
         title: "Capacity Reached: A Moment to Prioritize",
-        description: "To add a new brick, you must move a current one to the burn pile. This forces prioritization.",
+        description: "To add a new brick, you must first complete one or move a current one to the burn pile. This is the system.",
       });
       return;
     }
@@ -58,13 +73,10 @@ export default function Home() {
   };
   
   const burnBrick = (id: number) => {
-    // This action doesn't delete the brick, it just moves it to a conceptual "burn pile"
-    // by filtering it out from the main active list. Visually it's handled by BrickList.
-    // To make this permanent, we'd need another state for the burn pile.
-    // For now, we will simulate this by marking it as "burned" and filtering.
-    
-    const brickToBurn = todaysIncompleteBricks.find(b => b.id === id);
+    const brickToBurn = allHistoricalBricks.find(b => b.id === id);
     if (brickToBurn) {
+        playSound('thud');
+        // We just filter it out from the view, not permanently delete, so it goes to the burn pile
         setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
         toast({
             title: "Brick Moved to Burn Pile",
@@ -106,20 +118,20 @@ export default function Home() {
   };
   
   const allDailyBricksCompleted = maxBricks !== null && 
+                                  maxBricks !== Infinity &&
                                   todaysIncompleteBricks.length === 0 &&
                                   todaysCompletedBricks.length >= maxBricks;
 
-  // The burn pile will now show all tasks that are *not* on today's date and are incomplete.
-  // This is a simple way to represent the burn pile without adding more state.
   const burnPile = allHistoricalBricks.filter(b => b.date !== todayString && !b.isCompleted);
 
-  return (
-    <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-      <Header />
-      <div className="w-full flex-grow">
-        {maxBricks === null ? (
-          <EnergyAudit onSubmit={handleAuditSubmit} />
-        ) : (
+  const renderContent = () => {
+    switch (appState) {
+      case 'paywall':
+        return <Paywall onPlanSelect={handlePlanSelect} />;
+      case 'audit':
+        return <EnergyAudit onSubmit={handleAuditSubmit} />;
+      case 'building':
+        return (
           <>
             {allDailyBricksCompleted ? (
               <Firebreak onLayMore={handleLayMore} />
@@ -128,7 +140,7 @@ export default function Home() {
                 addBrick={addBrick} 
                 text={newBrickText}
                 setText={setNewBrickText}
-                disabled={maxBricks !== null && todaysIncompleteBricks.length >= maxBricks} 
+                disabled={maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks} 
               />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
@@ -139,7 +151,7 @@ export default function Home() {
                   removeBrick={completeBrick} 
                   burnBrick={burnBrick}
                   reorderBricks={reorderBricks}
-                  maxBricks={maxBricks}
+                  maxBricks={maxBricks === Infinity ? 99 : maxBricks}
                   onPlaceholderClick={handlePlaceholderClick}
                 />
               </div>
@@ -149,7 +161,17 @@ export default function Home() {
               </div>
             </div>
           </>
-        )}
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
+      <Header />
+      <div className="w-full flex-grow">
+        {renderContent()}
       </div>
       <Wall bricks={allHistoricalBricks} />
       <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-4">
@@ -158,7 +180,7 @@ export default function Home() {
             <p>
             &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
             </p>
-            <p>Concept reimagined in Next.js & Tailwind CSS.</p>
+            <p>The Sustainable System for Long-Term Creators.</p>
         </div>
       </footer>
     </main>
