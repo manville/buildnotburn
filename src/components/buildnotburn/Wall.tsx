@@ -45,8 +45,12 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRec
 export const Wall: FC<WallProps> = ({ bricks }) => {
   const [completedIds, setCompletedIds] = React.useState<number[]>([]);
   const [recentlyCompleted, setRecentlyCompleted] = React.useState<number[]>([]);
+  const [today, setToday] = React.useState(new Date());
 
   React.useEffect(() => {
+    // This effect runs only on the client, preventing the hydration mismatch.
+    setToday(new Date());
+
     const newCompletedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
     const newBricks = newCompletedIds.filter(id => !completedIds.includes(id));
 
@@ -62,12 +66,14 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
     }
   }, [bricks, completedIds]);
 
-  const wallData = Array.from({ length: NUM_DAYS }).map((_, i) => {
-    const date = subDays(new Date(), i);
-    const dateString = format(date, 'yyyy-MM-dd');
-    const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
-    return { date: dateString, completedBricks, totalCompleted: completedBricks.length };
-  });
+  const wallData = React.useMemo(() => {
+    return Array.from({ length: NUM_DAYS }).map((_, i) => {
+      const date = subDays(today, i);
+      const dateString = format(date, 'yyyy-MM-dd');
+      const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
+      return { date: dateString, completedBricks, totalCompleted: completedBricks.length };
+    });
+  }, [bricks, today]);
 
   return (
     <section className="mt-16 pb-8">

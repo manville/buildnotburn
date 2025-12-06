@@ -15,20 +15,34 @@ const brickTexts = [
   "SCHEDULE USER INTERVIEWS",
 ];
 
-const getRandomElement = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+// Simple pseudo-random generator with a seed
+const createSeededRandom = (seed: number) => () => {
+  let s = seed;
+  s = Math.sin(s) * 10000;
+  return s - Math.floor(s);
+};
+
+// Use a fixed seed for deterministic "randomness"
+const seed = 12345;
+const seededRandom = createSeededRandom(seed);
+
+const getRandomElement = <T,>(arr: T[]): T => arr[Math.floor(seededRandom() * arr.length)];
 
 export const generateInitialBricks = (): { completed: Brick[], incomplete: Brick[] } => {
   const allBricks: Brick[] = [];
   let idCounter = 0;
+  
+  // Use a fixed date to avoid server-client mismatch
+  const staticToday = new Date('2024-07-01T12:00:00.000Z');
 
   // Generate completed bricks for the last 90 days
   for (let i = 1; i < 90; i++) { // Start from yesterday
-    const date = subDays(new Date(), i);
+    const date = subDays(staticToday, i);
     const dateString = format(date, 'yyyy-MM-dd');
-    const shouldHaveBricks = Math.random() > 0.3; // 70% chance of having bricks on a given day
+    const shouldHaveBricks = seededRandom() > 0.3; // 70% chance of having bricks on a given day
 
     if (shouldHaveBricks) {
-      const numBricks = Math.floor(Math.random() * 3) + 1; // 1 to 3 bricks
+      const numBricks = Math.floor(seededRandom() * 3) + 1; // 1 to 3 bricks
       for (let j = 0; j < numBricks; j++) {
         allBricks.push({
           id: idCounter++,
@@ -43,7 +57,7 @@ export const generateInitialBricks = (): { completed: Brick[], incomplete: Brick
   // Generate a few incomplete bricks from the last week
   const incomplete: Brick[] = [];
   for (let i = 0; i < 3; i++) {
-    const date = subDays(new Date(), Math.floor(Math.random() * 7) + 1);
+    const date = subDays(staticToday, Math.floor(seededRandom() * 7) + 1);
     incomplete.push({
         id: idCounter++,
         text: getRandomElement(brickTexts),
