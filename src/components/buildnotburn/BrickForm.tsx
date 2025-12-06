@@ -1,21 +1,21 @@
-import { useState, type FC, type FormEvent } from 'react';
+import { type FC, type FormEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 interface BrickFormProps {
   addBrick: (text: string) => void;
+  text: string;
+  setText: (text: string) => void;
   disabled?: boolean;
 }
 
-export const BrickForm: FC<BrickFormProps> = ({ addBrick, disabled = false }) => {
-  const [text, setText] = useState('');
+export const BrickForm: FC<BrickFormProps> = ({ addBrick, text, setText, disabled = false }) => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if(disabled) return;
     addBrick(text);
-    setText('');
   };
 
   return (

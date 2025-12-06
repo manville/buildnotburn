@@ -18,6 +18,7 @@ export default function Home() {
   const [burnPile, setBurnPile] = useState<Brick[]>([]);
   const [completedBricks, setCompletedBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
+  const [newBrickText, setNewBrickText] = useState("");
   const { toast } = useToast();
   
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function Home() {
     };
     
     setBricks(prevBricks => [...prevBricks, newBrick]);
+    setNewBrickText("");
   };
   
   const burnBrick = (id: number) => {
@@ -98,6 +100,9 @@ export default function Home() {
     setMaxBricks(prev => (prev ? prev + 1 : 1));
   };
 
+  const handlePlaceholderClick = (text: string) => {
+    setNewBrickText(text);
+  };
 
   const allBricksForWall = [...completedBricks, ...bricks.filter(b => b.isCompleted)];
   
@@ -116,7 +121,12 @@ export default function Home() {
             {allDailyBricksCompleted ? (
               <Firebreak onLayMore={handleLayMore} />
             ) : (
-              <BrickForm addBrick={addBrick} disabled={maxBricks !== null && bricks.length >= maxBricks} />
+              <BrickForm 
+                addBrick={addBrick} 
+                text={newBrickText}
+                setText={setNewBrickText}
+                disabled={maxBricks !== null && bricks.length >= maxBricks} 
+              />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
@@ -127,6 +137,7 @@ export default function Home() {
                   burnBrick={burnBrick}
                   reorderBricks={reorderBricks}
                   maxBricks={maxBricks}
+                  onPlaceholderClick={handlePlaceholderClick}
                 />
               </div>
               <div>

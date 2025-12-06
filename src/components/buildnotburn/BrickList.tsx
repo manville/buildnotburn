@@ -1,11 +1,12 @@
 
 "use client";
 import type { FC, DragEvent } from 'react';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BrickItem } from './BrickItem';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
 import { BrickPlaceholder } from './BrickPlaceholder';
+import suggestionData from '@/data/suggestions.json';
 
 interface BrickListProps {
   bricks: Brick[];
@@ -14,12 +15,20 @@ interface BrickListProps {
   reorderBricks?: (fromId: number, toId: number) => void;
   variant?: 'build' | 'burn';
   maxBricks?: number | null;
+  onPlaceholderClick?: (text: string) => void;
 }
 
-export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks }) => {
+export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks, onPlaceholderClick }) => {
   const isBurnPile = variant === 'burn';
   const dragItemId = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  
+  useEffect(() => {
+    // Shuffle suggestions on client-side to prevent hydration mismatch
+    setSuggestions(suggestionData.sort(() => 0.5 - Math.random()));
+  }, []);
+
 
   const handleDragStart = (e: DragEvent<HTMLLIElement>, id: number) => {
     dragItemId.current = id;
@@ -49,10 +58,14 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
   }
   
   const renderPlaceholders = () => {
-    if (variant !== 'build' || !maxBricks) return null;
+    if (variant !== 'build' || !maxBricks || !onPlaceholderClick) return null;
     const placeholderCount = maxBricks - bricks.length;
     return Array.from({ length: placeholderCount }).map((_, index) => (
-      <BrickPlaceholder key={`placeholder-${index}`} />
+      <BrickPlaceholder 
+        key={`placeholder-${index}`}
+        text={suggestions[index % suggestions.length]}
+        onClick={onPlaceholderClick}
+      />
     ));
   };
 
