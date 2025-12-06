@@ -61,8 +61,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
   };
 
-  const handlePlanSelect = (plan: Plan) => {
-    const cycle = plan === 'trial' ? 'free' : billingCycle;
+  const handlePlanSelect = (plan: Plan, cycle: BillingCycle | 'free') => {
     if (user) {
       processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
     } else {
@@ -93,6 +92,9 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
 
   const handleEmailSignupAndCheckout = async (name: string, email: string) => {
     if (!selectedPlan) return;
+    // For email signups, we can't get a real UID until they click the link.
+    // We create a temporary ID to associate the checkout, and our webhook
+    // will need to be smart enough to handle this (e.g. by creating a new user if ID is temp)
     const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     await processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, email, name);
   };
@@ -103,7 +105,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     try {
         const planDetails = (plans as any)[plan][cycle];
       
-      if (!planDetails.variantId || planDetails.variantId.startsWith('REPLACE')) {
+      if (!planDetails.variantId || planDetails.variantId.includes('REPLACE')) {
         toast({
           variant: "destructive",
           title: "Configuration Error",
@@ -199,7 +201,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-               <Button variant="outline" className="w-full" onClick={() => handlePlanSelect('trial')} disabled={!!isLoading}>
+               <Button variant="outline" className="w-full" onClick={() => handlePlanSelect('trial', 'free')} disabled={!!isLoading}>
                     {isLoading === 'trial-free' ? 'Processing...' : 'Join for Free'}
                 </Button>
             </CardFooter>
@@ -255,7 +257,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className="w-full font-bold" onClick={() => handlePlanSelect('builder')} disabled={!!isLoading}>
+              <Button className="w-full font-bold" onClick={() => handlePlanSelect('builder', billingCycle)} disabled={!!isLoading}>
                   {isLoading === `builder-${billingCycle}` ? 'Processing...' : 'Get the System'}
               </Button>
             </CardFooter>
@@ -304,7 +306,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full" onClick={() => handlePlanSelect('architect')} disabled={!!isLoading}>
+              <Button variant="secondary" className="w-full" onClick={() => handlePlanSelect('architect', billingCycle)} disabled={!!isLoading}>
                   {isLoading === `architect-${billingCycle}` ? 'Processing...' : 'Become an Architect'}
               </Button>
             </CardFooter>
@@ -322,3 +324,5 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     </>
   );
 };
+
+    
