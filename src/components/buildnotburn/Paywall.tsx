@@ -65,7 +65,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email address.' });
         return;
     }
-    setIsLoading(true);
+    setIsLoading('email');
     try {
         await sendSignInLink(email);
         window.localStorage.setItem('emailForSignIn', email);
@@ -73,7 +73,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     } catch (error: any) {
         toast({
             variant: 'destructive',
-            title: 'Error sending link',
+            title: 'Error Sending Link',
             description: error.message || 'Could not send sign-in link. Please try again.',
         });
     } finally {
@@ -82,18 +82,32 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   }
 
   const handleGoogleLogin = async () => {
-      setIsLoading(true);
+      setIsLoading('google');
       try {
         const userCredential = await signInWithGoogle();
         if (userCredential.user) {
             await getOrCreateUser(userCredential.user);
         }
       } catch (error: any) {
-          toast({
-              variant: 'destructive',
-              title: 'Google Sign-In Failed',
-              description: error.message || 'Could not sign in with Google. Please try again.',
-          });
+          if (error.code === 'auth/popup-closed-by-user') {
+            toast({
+                variant: "default",
+                title: 'Sign-in Cancelled',
+                description: 'You can sign in with Google at any time.',
+            });
+          } else if (error.code === 'auth/configuration-not-found') {
+            toast({
+                variant: 'destructive',
+                title: 'Configuration Error',
+                description: 'Google Sign-In is not enabled for this project. Please see the setup guide.',
+            });
+          } else {
+            toast({
+                variant: 'destructive',
+                title: 'Google Sign-In Failed',
+                description: error.message || 'Could not sign in with Google. Please try again.',
+            });
+          }
       } finally {
           setIsLoading(false);
       }
@@ -102,9 +116,9 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const handlePaidPlanSelect = async (plan: 'builder' | 'architect') => {
     if (!user) {
         toast({
-            title: "Please Sign In",
+            title: "Please Sign In First",
             description: "You need to be signed in to purchase a plan.",
-            variant: "destructive"
+            variant: "default"
         });
         document.getElementById('email-input')?.focus();
         return;
@@ -128,7 +142,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         const checkoutResponse = await createLemonSqueezyCheckout({
             variantId: selectedPlan.variantId,
             email: user.email!,
-            name: user.displayName || '',
+            name: user.displayName || user.email!,
             userId: user.uid,
             plan: plan,
         });
@@ -327,7 +341,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         {!user && (
             <Card className="max-w-lg mx-auto mt-12 border-primary/50">
                 <CardHeader>
-                    <CardTitle className="font-headline text-xl uppercase text-center">Sign In to Continue</CardTitle>
+                    <CardTitle className="font-headline text-xl uppercase text-center">Choose an Option to Continue</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {emailSent ? (
@@ -339,8 +353,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4">
-                            <Button variant="outline" onClick={handleGoogleLogin} disabled={!!isLoading} className="h-12 text-base border-2">
-                                {isLoading ? 'Signing in...' : (
+                            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading === 'google'} className="h-12 text-base border-2">
+                                {isLoading === 'google' ? 'Signing in...' : (
                                     <>
                                         <GoogleIcon className="h-6 w-6 mr-2" />
                                         Sign in with Google
@@ -360,12 +374,12 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                                     placeholder="Enter your email address"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    disabled={!!isLoading}
+                                    disabled={isLoading === 'email'}
                                     required
                                     className="h-12 text-base"
                                 />
-                                <Button type="submit" className="h-12 font-bold text-base" disabled={!!isLoading}>
-                                    {isLoading ? 'Sending...' : 'Send Sign-in Link'}
+                                <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading === 'email'}>
+                                    {isLoading === 'email' ? 'Sending...' : 'Send Sign-in Link'}
                                 </Button>
                             </form>
                         </div>
@@ -376,3 +390,5 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     </div>
   );
 };
+
+    
