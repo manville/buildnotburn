@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { BookOpen, LogOut, LayoutDashboard } from 'lucide-react';
+import { BookOpen, LogOut, LayoutDashboard, LogIn } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { SignInModal } from './SignInModal';
 
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
@@ -40,12 +41,13 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuide }) => {
     const isPaidUser = plan === 'builder' || plan === 'architect';
+    const [isSignInModalOpen, setIsSignInModalOpen] = React.useState(false);
 
     return (
         <>
             <header className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-12 text-center select-none relative">
-                {user && (
-                    <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4">
+                    {user ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -84,8 +86,13 @@ export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuid
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    </div>
-                )}
+                    ) : (
+                        <Button variant="outline" onClick={() => setIsSignInModalOpen(true)}>
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Sign In
+                        </Button>
+                    )}
+                </div>
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24" />
                     <div className="font-headline font-bold uppercase tracking-wider text-5xl sm:text-7xl lg:text-8xl leading-none">
@@ -111,8 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuid
                     )}
                 </div>
             </header>
+            <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
         </>
     );
 };
-
-    

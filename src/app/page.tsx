@@ -14,7 +14,7 @@ import { Firebreak } from "@/components/buildnotburn/Firebreak";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { getTodayString, getYesterdayString } from "@/lib/mock-data";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
@@ -43,62 +43,65 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
-    const hasSeenGuide = localStorage.getItem('hasSeenGuide');
-    // Only show guide on first load if they are a paid user
-    if (!hasSeenGuide && (plan === 'builder' || plan === 'architect')) {
-      setIsGuideOpen(true);
-    }
-  }, [plan]);
+  }, []);
 
   const handleGuideClose = () => {
     localStorage.setItem('hasSeenGuide', 'true');
     setIsGuideOpen(false);
   }
 
-  // This effect handles the main application state transitions based on user auth and plan.
   useEffect(() => {
     if (userLoading) {
-      setAppState('loading');
-      return;
+        setAppState('loading');
+        return;
     }
 
+    // If there is no user, they should see the paywall.
     if (!user) {
-      setAppState('paywall');
-      setPlan(null); // Explicitly set no plan
-      setMaxBricks(null);
-      setAllHistoricalBricks([]); // Clear any local/mock bricks
-      return;
+        setAppState('paywall');
+        setPlan(null);
+        setMaxBricks(null);
+        setAllHistoricalBricks([]);
+        return;
     }
-    
-    // User is logged in, listen for their data.
+
+    // If there IS a user, listen to their data for plan changes.
     if (db) {
         const userRef = doc(db, `users/${user.uid}`);
-        const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
-        
         const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
-            let userPlan: Plan = 'trial';
             if (userDoc.exists()) {
-                userPlan = userDoc.data().plan || 'trial';
-            }
-            setPlan(userPlan);
-            
-            // This is the core logic for routing the user.
-            if (userPlan === 'builder') {
-                setAppState('audit');
-                setMaxBricks(null); // Reset max bricks until audit is complete
-            } else if (userPlan === 'architect') {
-                setAppState('building');
-                setMaxBricks(Infinity);
-            } else { // Trial plan
+                const userPlan: Plan = userDoc.data().plan || 'trial';
+                setPlan(userPlan);
+                
+                // Show guide on first paid login
+                const hasSeenGuide = localStorage.getItem('hasSeenGuide');
+                if (!hasSeenGuide && (userPlan === 'builder' || userPlan === 'architect')) {
+                  setIsGuideOpen(true);
+                }
+
+                if (userPlan === 'builder') {
+                    setAppState('audit');
+                    setMaxBricks(null); 
+                } else if (userPlan === 'architect') {
+                    setAppState('building');
+                    setMaxBricks(Infinity); 
+                } else { // Trial plan
+                    setAppState('building');
+                    setMaxBricks(TRIAL_MAX_BRICKS);
+                }
+            } else {
+                // New user doc doesn't exist yet, default to trial
+                setPlan('trial');
                 setAppState('building');
                 setMaxBricks(TRIAL_MAX_BRICKS);
             }
         }, (error) => {
             console.error("Error fetching user data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-            setAppState('paywall'); // Default to paywall on error
+            setAppState('paywall');
         });
-        
+
+        const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
         const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
             const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
             setAllHistoricalBricks(bricksFromDb);
@@ -338,5 +341,3 @@ export default function Home() {
     </main>
   );
 }
-
-    

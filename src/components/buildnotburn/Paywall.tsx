@@ -15,6 +15,8 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
+import { getOrCreateUser, signInWithGoogle } from '@/firebase/auth';
+import { SignInModal } from './SignInModal';
 
 type Plan = 'trial' | 'builder' | 'architect';
 type BillingCycle = 'monthly' | 'annually';
@@ -56,6 +58,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
 
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   const plans = {
     trial: {
@@ -82,9 +85,27 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
     } else {
       setSelectedPlan({ plan, cycle });
-      setShowSignupModal(true);
+      setIsSignInModalOpen(true); // Open the sign-in modal instead of the signup form
     }
   };
+
+  const handleGoogleSignInAndCheckout = async () => {
+    if (!selectedPlan) return;
+    try {
+        const credential = await signInWithGoogle();
+        const loggedInUser = credential.user;
+        await getOrCreateUser(loggedInUser);
+        processCheckout(selectedPlan.plan, selectedPlan.cycle, loggedInUser.uid, loggedInUser.email!, loggedInUser.displayName || '');
+    } catch(error: any) {
+        console.error("Google Sign-In failed", error);
+        toast({
+            variant: "destructive",
+            title: "Sign-In Error",
+            description: "Could not sign in with Google. Please try again."
+        })
+    }
+  }
+
 
   const handleSignupAndCheckout = async (e: FormEvent) => {
     e.preventDefault();
@@ -261,7 +282,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             </CardContent>
             <CardFooter>
               <Button className="w-full font-bold" onClick={() => handlePlanSelect('builder')} disabled={!!isLoading}>
-                  {isLoading === `builder-${billingCycle}` ? 'Processing...' : 'Get the System'}
+                  {isLoading === `builder-${billingCycle}` ? 'Processing...' : (user ? 'Get the System' : 'Sign In to Purchase')}
               </Button>
             </CardFooter>
           </Card>
@@ -310,57 +331,24 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             </CardContent>
             <CardFooter>
               <Button variant="secondary" className="w-full" onClick={() => handlePlanSelect('architect')} disabled={!!isLoading}>
-                  {isLoading === `architect-${billingCycle}` ? 'Processing...' : 'Become an Architect'}
+                  {isLoading === `architect-${billingCycle}` ? 'Processing...' : (user ? 'Become an Architect' : 'Sign In to Purchase')}
               </Button>
             </CardFooter>
           </Card>
         </div>
       </div>
 
-      <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-headline text-2xl uppercase">One Final Step</DialogTitle>
-            <DialogDescription>
-              Enter your name and email to proceed. Your account will be created after.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSignupAndCheckout}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" className="w-full font-bold" disabled={!!isLoading}>
-                {isLoading ? 'Processing...' : 'Proceed'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <SignInModal 
+        isOpen={isSignInModalOpen} 
+        onClose={() => setIsSignInModalOpen(false)}
+        onGoogleSignIn={handleGoogleSignInAndCheckout}
+        showEmailNameFields={selectedPlan?.plan !== 'trial'}
+        onEmailSubmit={async (name, email) => {
+            if (!selectedPlan) return;
+            const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, email, name);
+        }}
+      />
     </>
   );
 };
