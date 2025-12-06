@@ -14,8 +14,7 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { getTodayString, getYesterdayString } from "@/lib/mock-data";
+import { getTodayString, getYesterdayString, generateMockWallBricks } from "@/lib/mock-data";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building, Flame } from "lucide-react";
@@ -41,10 +40,12 @@ export default function Home() {
   const auth = useAuth();
   const db = useFirestore();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [mockWallBricks, setMockWallBricks] = useState<Brick[]>([]);
 
 
   useEffect(() => {
     setIsMounted(true);
+    setMockWallBricks(generateMockWallBricks());
   }, []);
 
 
@@ -320,7 +321,7 @@ export default function Home() {
         <div className="w-full flex-grow">
           {renderContent()}
         </div>
-        <Wall bricks={allHistoricalBricks} />
+        <Wall bricks={user ? allHistoricalBricks : mockWallBricks} />
         <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
           <ThemeSwitcher />
           <div className="flex items-center justify-center gap-4">
