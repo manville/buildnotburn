@@ -11,6 +11,7 @@ import type { Brick } from "@/types";
 import { generateInitialBricks } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/lib/play-sound";
+import { Firebreak } from "@/components/buildnotburn/Firebreak";
 
 const { completed, incomplete } = generateInitialBricks();
 
@@ -64,6 +65,7 @@ export default function Home() {
   };
 
   const allBricks = [...bricks, ...burnPile, ...completedBricks];
+  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0 && maxBricks > 0;
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
@@ -73,15 +75,19 @@ export default function Home() {
           <EnergyAudit onSubmit={handleAuditSubmit} />
         ) : (
           <>
-            <BrickForm addBrick={addBrick} />
+            {allDailyBricksCompleted ? (
+              <Firebreak />
+            ) : (
+              <BrickForm addBrick={addBrick} />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
                 <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
                 <BrickList bricks={bricks} removeBrick={removeBrick} />
               </div>
               <div>
-                <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">BURN PILE</h2>
-                <BrickList bricks={burnPile} removeBrick={() => {}} readOnly />
+                <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">THE BURN PILE</h2>
+                <BrickList bricks={burnPile} removeBrick={() => {}} variant="burn" />
               </div>
             </div>
           </>
