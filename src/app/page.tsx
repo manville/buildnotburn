@@ -37,8 +37,8 @@ export default function Home() {
     if (maxBricks !== null && bricks.length >= maxBricks) {
       toast({
         variant: "destructive",
-        title: "Daily Limit Reached",
-        description: "Focus on your current bricks or move one to the burn pile.",
+        title: "Capacity Reached: A Moment to Prioritize",
+        description: "To add a new brick, you must move a current one to the burn pile. This forces prioritization.",
       });
       return;
     }
@@ -59,8 +59,8 @@ export default function Home() {
       setBricks(bricks.filter(b => b.id !== id));
       setBurnPile(prev => [...prev, { ...brickToBurn, isCompleted: false }]);
       toast({
-        title: "Brick Moved",
-        description: `"${brickToBurn.text}" moved to the burn pile.`,
+        title: "Brick Moved to Burn Pile",
+        description: `"${brickToBurn.text}" is no longer a priority for today.`,
       });
     }
   };
