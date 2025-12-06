@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type FC } from 'react';
@@ -182,12 +183,12 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
           </Card>
 
           {/* Builder Plan */}
-          <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden transform lg:-translate-y-4">
+          <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 transform lg:-translate-y-4">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold uppercase px-3 py-1 rounded-full">
               Recommended
             </div>
             {builderImage && (
-                <div className="bg-card/50">
+                <div className="bg-card/50 overflow-hidden rounded-t-lg">
                   <Image 
                       src={builderImage.imageUrl} 
                       alt={builderImage.description}
