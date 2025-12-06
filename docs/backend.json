@@ -27,6 +27,24 @@
         "phone": {
           "type": "string",
           "description": "The user's phone number."
+        },
+        "plan": {
+          "type": "string",
+          "description": "The user's subscription plan (e.g., trial, builder, architect).",
+          "enum": ["trial", "builder", "architect"]
+        },
+        "lemonSqueezyCustomerId": {
+            "type": "string",
+            "description": "The user's customer ID from Lemon Squeezy."
+        },
+        "subscriptionStatus": {
+            "type": "string",
+            "description": "The status of the user's subscription from Lemon Squeezy (e.g., active, cancelled)."
+        },
+        "renewsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date the user's subscription is set to renew."
         }
       },
       "required": ["id", "email"]
@@ -92,7 +110,7 @@
                 "phone": {"type": "string"}
             }
         },
-        "description": "Temporary storage for user data during Stripe checkout."
+        "description": "Temporary storage for user data during checkout."
     }
   }
 }
