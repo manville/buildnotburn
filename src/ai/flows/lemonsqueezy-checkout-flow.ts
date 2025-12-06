@@ -32,23 +32,63 @@ const createCheckoutUrlFlow = ai.defineFlow(
     },
     async (input) => {
         const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-        if (!apiKey) {
-            throw new Error('LEMONSQUEEZY_API_KEY is not set in environment variables.');
+        const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+
+        if (!apiKey || !storeId) {
+            throw new Error('LEMONSQUEEZY_API_KEY and LEMONSQUEEZY_STORE_ID must be set in environment variables.');
         }
 
-        // TODO: Implement Lemon Squeezy checkout creation logic
-        console.log('Creating Lemon Squeezy checkout for:', input);
+        const { variantId, email, name, userId, plan } = input;
 
-        // This is a placeholder. In a real implementation, you would:
-        // 1. Make a POST request to the Lemon Squeezy API's /v1/checkouts endpoint.
-        // 2. Pass the variantId, user email, name, and any custom data (like userId).
-        // 3. The API would return a checkout object with a `url` property.
-        
-        // For now, we'll return a dummy URL. Replace with real logic.
-        const dummyCheckoutUrl = `https://your-store.lemonsqueezy.com/checkout/buy/your-variant-uuid?email=${encodeURIComponent(input.email)}&name=${encodeURIComponent(input.name)}`;
+        const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.api+json',
+                'Content-Type': 'application/vnd.api+json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                data: {
+                    type: 'checkouts',
+                    attributes: {
+                        checkout_data: {
+                            email: email,
+                            name: name,
+                            custom: {
+                                user_id: userId,
+                                plan: plan,
+                            },
+                        },
+                    },
+                    relationships: {
+                        store: {
+                            data: {
+                                type: 'stores',
+                                id: storeId,
+                            },
+                        },
+                        variant: {
+                            data: {
+                                type: 'variants',
+                                id: variantId,
+                            },
+                        },
+                    },
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error("Lemon Squeezy API Error:", error);
+            throw new Error(`Failed to create checkout: ${error.errors?.[0]?.detail || response.statusText}`);
+        }
+
+        const checkout = await response.json();
+        const checkoutUrl = checkout.data.attributes.url;
 
         return {
-            checkoutUrl: dummyCheckoutUrl,
+            checkoutUrl: checkoutUrl,
         };
     }
 );
