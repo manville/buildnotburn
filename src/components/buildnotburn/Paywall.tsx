@@ -1,19 +1,22 @@
 
 'use client';
 
-import { useState, type FC } from 'react';
+import { useState, type FC, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Check } from 'lucide-react';
+import { Check, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
+import { Input } from '../ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { sendSignInLink } from '@/firebase/auth';
+
 
 type Plan = 'trial' | 'builder' | 'architect';
 
 interface PaywallProps {
   onPlanSelect: (plan: Plan) => void;
-  onLogin: () => void;
   user: User | null;
 }
 
@@ -28,22 +31,38 @@ const plans = {
   },
 };
 
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.012,35.846,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
-);
-
-
-export const Paywall: FC<PaywallProps> = ({ onPlanSelect, onLogin, user }) => {
+export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const { toast } = useToast();
 
   const handleBillingToggle = () => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
   };
+
+  const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email) {
+        toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email address.' });
+        return;
+    }
+    setIsLoading(true);
+    try {
+        await sendSignInLink(email);
+        window.localStorage.setItem('emailForSignIn', email);
+        setEmailSent(true);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error sending link',
+            description: error.message || 'Could not send sign-in link. Please try again.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   return (
     <div className="max-w-6xl mx-auto my-8">
@@ -121,13 +140,17 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, onLogin, user }) => {
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
+                <span>Cloud data sync</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
                 <span>Directly support development</span>
               </li>
             </ul>
           </CardContent>
           <CardFooter>
-            <Button className="w-full font-bold" onClick={() => onPlanSelect('builder')}>
-              Become a Builder
+            <Button className="w-full font-bold" onClick={() => user ? onPlanSelect('builder') : document.getElementById('email-input')?.focus()}>
+              {user ? 'Become a Builder' : 'Sign in to Choose'}
             </Button>
           </CardFooter>
         </Card>
@@ -143,7 +166,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, onLogin, user }) => {
                <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.architect.monthly.price : Math.round(plans.architect.annually.price / 12)}</span>
               <span className="text-muted-foreground">/ month</span>
             </div>
-            <ul className="space-y-2 text-sm text-foreground h-[150px]">
+             <ul className="space-y-2 text-sm text-foreground h-[150px]">
                <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span className="font-medium">Everything in Builder, plus:</span>
@@ -154,7 +177,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, onLogin, user }) => {
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
-                <span className='font-bold text-primary'>Cloud data sync</span>
+                <span>Advanced Analytics</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
@@ -163,19 +186,46 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, onLogin, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-             {user ? (
-                <Button variant="secondary" className="w-full" onClick={() => onPlanSelect('architect')}>
-                    Become an Architect
-                </Button>
-             ) : (
-                <Button variant="secondary" className="w-full" onClick={onLogin}>
-                    <GoogleIcon className="mr-2"/>
-                    Sign in to Continue
-                </Button>
-             )}
+             <Button variant="secondary" className="w-full" onClick={() => user ? onPlanSelect('architect') : document.getElementById('email-input')?.focus()}>
+                {user ? 'Become an Architect' : 'Sign in to Choose'}
+            </Button>
           </CardFooter>
         </Card>
       </div>
+
+        {!user && (
+            <Card className="max-w-lg mx-auto mt-12 border-primary/50">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl uppercase text-center">Sign In to Continue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {emailSent ? (
+                        <div className='text-center'>
+                            <Mail className="h-8 w-8 mx-auto text-primary"/>
+                            <p className="font-bold mt-2">Check your email</p>
+                            <p className="text-sm text-muted-foreground mt-1">A sign-in link has been sent to <strong>{email}</strong>.</p>
+                            <p className="text-xs text-muted-foreground/80 mt-4">Close this tab and click the link in the email to sign in.</p>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
+                            <Input
+                                id="email-input"
+                                type="email"
+                                placeholder="Enter your email address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isLoading}
+                                required
+                                className="h-12 text-base"
+                            />
+                            <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading}>
+                                {isLoading ? 'Sending...' : 'Send Sign-in Link'}
+                            </Button>
+                        </form>
+                    )}
+                </CardContent>
+            </Card>
+        )}
     </div>
   );
 };

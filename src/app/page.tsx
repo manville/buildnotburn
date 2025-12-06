@@ -16,7 +16,7 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, getDoc } from 'firebase/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 
 type AppState = 'paywall' | 'audit' | 'building';
 type Plan = 'trial' | 'builder' | 'architect';
@@ -72,43 +72,22 @@ export default function Home() {
           setAppState('paywall');
         }
       } else {
-        setAppState('paywall');
+        // This case handles first-time login after email link verification
+        setDoc(userRef, {
+            id: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            plan: 'trial' // Default to trial on first login
+        }, { merge: true }).then(() => {
+            handlePlanSelect('trial', false);
+        });
       }
     });
 
     return () => unsubscribe();
   }, [user, userLoading, db, loadMockData]);
 
-
-  const handleLogin = async () => {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      if (db) {
-        const userRef = doc(db, "users", user.uid);
-        // Set user doc on first login, but don't overwrite plan if it exists
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-            await setDoc(userRef, {
-                id: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                plan: 'trial' // Default to trial on first login
-            }, { merge: true });
-        }
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Could not sign you in with Google. Please try again.",
-      });
-    }
-  };
 
   const handleLogout = async () => {
     if (auth) {
@@ -249,7 +228,7 @@ export default function Home() {
     }
     // If not logged in, or logged in but no plan selected yet
     if (appState === 'paywall' || !plan) {
-       return <Paywall onPlanSelect={(p) => handlePlanSelect(p, true)} onLogin={handleLogin} user={user} />;
+       return <Paywall onPlanSelect={(p) => handlePlanSelect(p, true)} user={user} />;
     }
     if (appState === 'audit') {
       return <EnergyAudit onSubmit={handleAuditSubmit} />;
@@ -309,5 +288,3 @@ export default function Home() {
     </main>
   );
 }
-
-    

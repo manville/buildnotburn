@@ -3,8 +3,7 @@
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { initializeFirebase } from '.';
+import { ReactNode, createContext, useContext } from 'react';
 
 type FirebaseContextValue = {
   app: FirebaseApp | null;
@@ -14,21 +13,9 @@ type FirebaseContextValue = {
 
 const FirebaseContext = createContext<FirebaseContextValue>({ app: null, auth: null, db: null });
 
-export function FirebaseProvider({ children }: { children: ReactNode }) {
-  const [instances, setInstances] = useState<FirebaseContextValue | null>(null);
-
-  useEffect(() => {
-    const firebaseInstances = initializeFirebase();
-    setInstances(firebaseInstances);
-  }, []);
-
-  const contextValue = useMemo(() => {
-    if (!instances) return { app: null, auth: null, db: null };
-    return instances;
-  }, [instances]);
-  
+export function FirebaseProvider({ children, value }: { children: ReactNode, value: FirebaseContextValue }) {
   return (
-    <FirebaseContext.Provider value={contextValue}>
+    <FirebaseContext.Provider value={value}>
       {children}
     </FirebaseContext.Provider>
   );
