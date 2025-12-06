@@ -34,41 +34,37 @@ export async function POST(req: NextRequest) {
 
         const payload = JSON.parse(rawBody);
         const { meta, data } = payload;
-        const eventName = meta.event_name;
-        
-        console.log(`Received Lemon Squeezy event: ${eventName}`);
 
-        // Handle the 'subscription_created' or 'subscription_updated' event
+        // We passed the userId in the custom_data during checkout
+        const userId = meta.custom_data?.user_id;
+
+        if (!userId) {
+             console.error('Webhook received without a user_id in custom_data');
+             return NextResponse.json({ error: 'Webhook payload missing user_id.' }, { status: 400 });
+        }
+        
+        const eventName = meta.event_name;
+        console.log(`Received Lemon Squeezy event: ${eventName} for user: ${userId}`);
+
+        // Handle 'subscription_created' or 'subscription_updated' events
         if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
             const customerId = data.attributes.customer_id;
-            const userEmail = data.attributes.user_email;
-            const planId = data.attributes.variant_id; // Or product_id, depending on your setup
-            const status = data.attributes.status; // e.g., 'active'
-            const endsAt = data.attributes.ends_at;
+            const planVariantId = data.attributes.variant_id;
+            const status = data.attributes.status; // e.g., 'active', 'past_due', 'cancelled'
             const renewsAt = data.attributes.renews_at;
-
-            // Find the user by email in your database
-            const usersRef = db.collection('users');
-            const userQuery = await usersRef.where('email', '==', userEmail).limit(1).get();
             
-            if (userQuery.empty) {
-                console.error(`Webhook error: User with email ${userEmail} not found.`);
-                return NextResponse.json({ error: 'User not found.' }, { status: 404 });
-            }
-            
-            const userDoc = userQuery.docs[0];
-            const userId = userDoc.id;
+            const userRef = db.collection('users').doc(userId);
 
-            // Determine plan from variant ID (you might need to map this)
-            // This is a placeholder, you'll need your own logic to map variantId to 'builder' or 'architect'
-            const plan = 'builder'; // Replace with your logic
+            // This is a simplified mapping. You'll want to make this more robust,
+            // perhaps by checking the planVariantId against your known variant IDs.
+            const plan = meta.custom_data?.plan || 'builder';
 
             // Update the user document in Firestore
-            await db.collection('users').doc(userId).update({
+            await userRef.update({
                 lemonSqueezyCustomerId: customerId,
                 subscriptionStatus: status,
-                renewsAt: renewsAt || endsAt,
-                plan: plan
+                renewsAt: renewsAt,
+                plan: plan,
             });
 
             console.log(`Successfully updated user ${userId} to plan ${plan} with status ${status}`);
