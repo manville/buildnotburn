@@ -5,9 +5,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 require('dotenv').config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
-
 // Initialize Firebase Admin SDK
 if (getApps().length === 0) {
     initializeApp({
@@ -18,6 +15,19 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 export async function POST(req: NextRequest) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.error('STRIPE_SECRET_KEY is not set.');
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
+  const stripe = new Stripe(stripeSecretKey);
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set.');
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
+
   const buf = await req.text();
   const sig = req.headers.get('stripe-signature') as string;
 

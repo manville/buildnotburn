@@ -37,7 +37,6 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 const createCheckoutSessionFlow = ai.defineFlow(
     {
@@ -46,6 +45,12 @@ const createCheckoutSessionFlow = ai.defineFlow(
         outputSchema: CreateCheckoutSessionOutputSchema,
     },
     async (input) => {
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            throw new Error('STRIPE_SECRET_KEY is not set in the environment variables.');
+        }
+        const stripe = new Stripe(stripeSecretKey);
+        
         const { priceId, email, userId, plan } = input;
         
         const successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
