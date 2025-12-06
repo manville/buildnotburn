@@ -16,28 +16,32 @@ import Link from 'next/link';
 
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
-    <svg
+    <svg 
+      viewBox="0 0 1920 1080" 
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       className={className}
       aria-hidden="true"
     >
-      <path 
-          fill="hsl(var(--primary))" 
-          stroke="hsl(var(--primary))"
-          d="M6.5 21V8.26321C6.5 7.15864 7.39543 6.26321 8.5 6.26321H13.6528C16.2051 6.26321 18.25 8.3081 18.25 10.8604C18.25 12.9325 16.892 14.7397 15.0114 15.3515C16.0353 15.639 16.75 16.6033 16.75 17.75C16.75 19.2688 15.5188 20.5 14 20.5L13.5 21H6.5Z"
-      />
-       <path 
-          fill="hsl(var(--background))"
-          stroke="hsl(var(--background))"
-          strokeWidth="0.5"
-          d="M9.5 17.5H13.5C14.3284 17.5 15 16.8284 15 16C15 15.1716 14.3284 14.5 13.5 14.5H9.5V17.5Z"
-      />
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <g transform="translate(960 540)" filter="url(#glow)">
+        <path d="M0 -240 L80 -120 L120 -60 L160 60 L120 160 L0 240 L-120 160 L-160 60 L-120 -60 L-80 -120 Z" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-80 -120 L0 0 L80 -120" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-120 -60 L0 60 L120 -60" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-160 60 L0 120 L160 60" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-120 160 L0 120 L120 160" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M0 120 L0 240" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-60 -20 L60 -80 L60 0 L-60 60 Z" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M-60 -20 L0 -80" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+        <path d="M60 -80 L0 -140" stroke="hsl(var(--primary))" strokeWidth="4" fill="none"/>
+      </g>
     </svg>
 );
 
