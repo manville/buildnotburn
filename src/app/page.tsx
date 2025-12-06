@@ -65,8 +65,8 @@ export default function Home() {
 
     if (!user) {
       setAppState('paywall');
-      setPlan('trial');
-      setMaxBricks(TRIAL_MAX_BRICKS);
+      setPlan(null); // Explicitly set no plan
+      setMaxBricks(null);
       setAllHistoricalBricks([]); // Clear any local/mock bricks
       return;
     }
@@ -97,7 +97,7 @@ export default function Home() {
         }, (error) => {
             console.error("Error fetching user data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-            setAppState('building'); // Default to building on error
+            setAppState('paywall'); // Default to paywall on error
         });
         
         const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
@@ -119,19 +119,7 @@ export default function Home() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      setAppState('paywall');
-      setPlan(null);
-      setAllHistoricalBricks([]);
-    }
-  };
-
-  // This function is now only used for post-login plan selection via paywall
-  const handlePlanSelect = (selectedPlan: Plan, writeToDb = true) => {
-    setPlan(selectedPlan);
-
-    if (user && db && writeToDb) {
-        const userRef = doc(db, "users", user.uid);
-        setDoc(userRef, { plan: selectedPlan }, { merge: true });
+      // The useEffect above will handle state changes when user becomes null
     }
   };
 
@@ -244,7 +232,15 @@ export default function Home() {
       return <div className="text-center font-code text-muted-foreground">LOADING SYSTEM...</div>
     }
     if (appState === 'paywall') {
-       return <Paywall onPlanSelect={(p) => handlePlanSelect(p, true)} user={user} />;
+       return <Paywall 
+         user={user}
+         variantIds={{
+            builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
+            builderAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID!,
+            architectMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID!,
+            architectAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID!,
+        }}
+       />;
     }
     if (appState === 'audit') {
       return <EnergyAudit onSubmit={handleAuditSubmit} />;
@@ -341,5 +337,7 @@ export default function Home() {
     </main>
   );
 }
+
+    
 
     

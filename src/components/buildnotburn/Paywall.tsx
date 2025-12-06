@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
@@ -18,24 +17,20 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 
-type Plan = 'trial' | 'builder' | 'architect';
+type Plan = 'builder' | 'architect';
 type BillingCycle = 'monthly' | 'annually';
 
-interface PaywallProps {
-  onPlanSelect: (plan: Plan, writeToDb: boolean) => void;
-  user: User | null;
+interface VariantIds {
+    builderMonthly: string;
+    builderAnnually: string;
+    architectMonthly: string;
+    architectAnnually: string;
 }
 
-const plans = {
-  builder: {
-    monthly: { price: 8, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID! },
-    annually: { price: 80, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID! },
-  },
-  architect: {
-    monthly: { price: 15, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID! },
-    annually: { price: 150, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID! },
-  },
-};
+interface PaywallProps {
+  user: User | null;
+  variantIds: VariantIds;
+}
 
 const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px" {...props}>
@@ -50,7 +45,7 @@ const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community')
 const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
 const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
 
-export const Paywall: FC<PaywallProps> = ({ user }) => {
+export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annually');
   const [isLoading, setIsLoading] = useState<boolean | string>(false);
   const { toast } = useToast();
@@ -59,6 +54,18 @@ export const Paywall: FC<PaywallProps> = ({ user }) => {
   const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle} | null>(null);
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
+
+  const plans = {
+    builder: {
+      monthly: { price: 8, variantId: variantIds.builderMonthly },
+      annually: { price: 80, variantId: variantIds.builderAnnually },
+    },
+    architect: {
+      monthly: { price: 15, variantId: variantIds.architectMonthly },
+      annually: { price: 150, variantId: variantIds.architectAnnually },
+    },
+  };
+
 
   const handleBillingToggle = () => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
@@ -355,3 +362,5 @@ export const Paywall: FC<PaywallProps> = ({ user }) => {
     </>
   );
 };
+
+    
