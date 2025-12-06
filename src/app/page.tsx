@@ -16,7 +16,7 @@ import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { getTodayString, getYesterdayString, getInitialBricks } from "@/lib/mock-data";
+import { getTodayString, getYesterdayString } from "@/lib/mock-data";
 import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,13 +24,13 @@ import { Info, Building, Flame } from "lucide-react";
 import Link from "next/link";
 
 
-type AppState = 'paywall' | 'audit' | 'building';
+type AppState = 'loading' | 'paywall' | 'audit' | 'building';
 type Plan = 'trial' | 'builder' | 'architect';
 
 const TRIAL_MAX_BRICKS = 3;
 
 export default function Home() {
-  const [appState, setAppState] = useState<AppState>('building');
+  const [appState, setAppState] = useState<AppState>('loading');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(3);
@@ -56,123 +56,82 @@ export default function Home() {
     setIsGuideOpen(false);
   }
 
-  const syncAnonymousBricks = async (userId: string) => {
-    if (!db || allHistoricalBricks.length === 0) return;
-    
-    const bricksToSync = allHistoricalBricks.filter(brick => 
-        typeof brick.id === 'string' && brick.id.startsWith('local-')
-    );
-
-    if (bricksToSync.length === 0) return;
-
-    const batch = writeBatch(db);
-    const bricksCol = collection(db, `users/${userId}/bricks`);
-
-    bricksToSync.forEach(brick => {
-      const newBrickRef = doc(bricksCol);
-      const brickData: Omit<Brick, 'id'> & { createdAt: any } = {
-        text: brick.text,
-        isCompleted: brick.isCompleted,
-        date: brick.date,
-        userId: userId,
-        createdAt: serverTimestamp(),
-      };
-      batch.set(newBrickRef, brickData);
-    });
-
-    try {
-      await batch.commit();
-    } catch (error) {
-      console.error("Error syncing bricks:", error);
-      toast({
-        variant: "destructive",
-        title: "Sync Error",
-        description: "Could not save your initial bricks.",
-      });
-    }
-  };
-
+  // This effect handles the main application state transitions based on user auth and plan.
   useEffect(() => {
-    if (userLoading || !db) {
-      return; 
+    if (userLoading) {
+      setAppState('loading');
+      return;
     }
 
-    // Handle signed-in user
-    if (user) {
-      if (allHistoricalBricks.some(b => b.userId !== user.uid)) {
-          setAllHistoricalBricks([]);
-      }
-      syncAnonymousBricks(user.uid);
-      
-      const userRef = doc(db, `users/${user.uid}`);
-      const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
-  
-      const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
-        const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
-        setAllHistoricalBricks(bricksFromDb);
-      }, (error) => {
-        console.error("Error fetching bricks:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
-      });
-  
-      const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const userPlan: Plan = userData.plan || 'trial';
-          handlePlanSelect(userPlan, false);
-        } else {
-          // New user, default to trial
-          handlePlanSelect('trial', false);
-        }
-      }, (error) => {
-        console.error("Error fetching user data:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-      });
-  
-      return () => {
-        unsubscribeBricks();
-        unsubscribeUser();
-      }
-    } 
-    // Handle anonymous user
-    else {
-      setAppState('building');
-      setPlan('trial'); 
+    if (!user) {
+      setAppState('paywall');
+      setPlan('trial');
       setMaxBricks(TRIAL_MAX_BRICKS);
-      
-      const localBricks = allHistoricalBricks.filter(b => b.userId === 'anonymous');
-      if (localBricks.length === 0) {
-        const { allBricks: mockBricks } = getInitialBricks();
-        setAllHistoricalBricks(mockBricks);
-      }
+      setAllHistoricalBricks([]); // Clear any local/mock bricks
+      return;
     }
-  }, [user, userLoading, db]);
+    
+    // User is logged in, listen for their data.
+    if (db) {
+        const userRef = doc(db, `users/${user.uid}`);
+        const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
+        
+        const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
+            let userPlan: Plan = 'trial';
+            if (userDoc.exists()) {
+                userPlan = userDoc.data().plan || 'trial';
+            }
+            setPlan(userPlan);
+            
+            // This is the core logic for routing the user.
+            if (userPlan === 'builder') {
+                setAppState('audit');
+                setMaxBricks(null); // Reset max bricks until audit is complete
+            } else if (userPlan === 'architect') {
+                setAppState('building');
+                setMaxBricks(Infinity);
+            } else { // Trial plan
+                setAppState('building');
+                setMaxBricks(TRIAL_MAX_BRICKS);
+            }
+        }, (error) => {
+            console.error("Error fetching user data:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
+            setAppState('building'); // Default to building on error
+        });
+        
+        const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
+            const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
+            setAllHistoricalBricks(bricksFromDb);
+        }, (error) => {
+            console.error("Error fetching bricks:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
+        });
+
+        return () => {
+            unsubscribeUser();
+            unsubscribeBricks();
+        };
+    }
+  }, [user, userLoading, db, toast]);
+
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      setAllHistoricalBricks([]);
-      setAppState('building');
+      setAppState('paywall');
       setPlan(null);
+      setAllHistoricalBricks([]);
     }
   };
 
+  // This function is now only used for post-login plan selection via paywall
   const handlePlanSelect = (selectedPlan: Plan, writeToDb = true) => {
     setPlan(selectedPlan);
 
     if (user && db && writeToDb) {
         const userRef = doc(db, "users", user.uid);
         setDoc(userRef, { plan: selectedPlan }, { merge: true });
-    }
-
-    if (selectedPlan === 'trial') {
-        setMaxBricks(TRIAL_MAX_BRICKS);
-        setAppState('building');
-    } else if (selectedPlan === 'builder') {
-        setAppState('audit');
-    } else if (selectedPlan === 'architect') {
-        setMaxBricks(Infinity); 
-        setAppState('building');
     }
   };
 
@@ -183,40 +142,12 @@ export default function Home() {
   };
 
   const todayString = getTodayString();
-  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user')));
-  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user')));
+  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString && user && b.userId === user.uid);
+  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString && user && b.userId === user.uid);
 
   const addBrick = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || !user || !db) return;
     const upperCaseText = text.toUpperCase();
-
-    if (!user && allHistoricalBricks.some(b => b.userId === 'sample-user')) {
-      setAllHistoricalBricks([]);
-    }
-
-    if (!user) {
-      if (todaysIncompleteBricks.length >= TRIAL_MAX_BRICKS) {
-        toast({
-          title: "Save Your Progress!",
-          description: "Sign in to save your bricks and lay more.",
-        });
-        setAppState('paywall');
-        return;
-      }
-      const newLocalBrick: Brick = {
-        id: `local-${Date.now()}`,
-        text: upperCaseText,
-        isCompleted: false,
-        date: todayString,
-        userId: 'anonymous',
-        createdAt: new Date().toISOString(),
-      };
-      setAllHistoricalBricks(prev => [...prev, newLocalBrick]);
-      setNewBrickText("");
-      return;
-    }
-
-    if (!db) return;
 
     if (plan === 'trial' && allHistoricalBricks.filter(b => b.userId === user.uid).length >= TRIAL_MAX_BRICKS) {
       setAppState('paywall');
@@ -252,7 +183,7 @@ export default function Home() {
   
   const burnBrick = async (id: string) => {
     const brickToBurn = allHistoricalBricks.find(b => b.id === id);
-    if (!brickToBurn) return;
+    if (!brickToBurn || !user || !db) return;
   
     playSound('thud');
     toast({
@@ -262,24 +193,15 @@ export default function Home() {
   
     const yesterday = getYesterdayString();
   
-    if (!user || !db || id.toString().startsWith('local-')) {
-      setAllHistoricalBricks(prev => prev.map(b => 
-        b.id === id ? { ...b, date: yesterday } : b
-      ));
-    } else {
-      const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
-      await updateDoc(brickRef, { date: yesterday });
-    }
+    const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
+    await updateDoc(brickRef, { date: yesterday });
   };
 
   const completeBrick = async (id: string) => {
+    if (!user || !db) return;
     playSound('thud');
-    if (!user || !db || id.toString().startsWith('local-')) {
-       setAllHistoricalBricks(prev => prev.map(b => b.id === id ? {...b, isCompleted: true} : b));
-    } else {
-      const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
-      await setDoc(brickRef, { isCompleted: true }, { merge: true });
-    }
+    const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
+    await setDoc(brickRef, { isCompleted: true }, { merge: true });
   };
   
   const reorderBricks = (fromId: string, toId: string) => {
@@ -309,17 +231,16 @@ export default function Home() {
 
   const burnPile = allHistoricalBricks.filter(b => {
     const isToday = b.date === todayString;
-    const isOwner = user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user');
+    const isOwner = user ? b.userId === user.uid : false;
     return !isToday && !b.isCompleted && isOwner;
   });
 
   const isAtBrickLimit = 
-      (!user && todaysIncompleteBricks.length >= TRIAL_MAX_BRICKS) ||
       (user && plan === 'trial' && allHistoricalBricks.filter(b => b.userId === user.uid).length >= TRIAL_MAX_BRICKS) ||
       (user && plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks);
 
   const renderContent = () => {
-    if (userLoading) {
+    if (appState === 'loading') {
       return <div className="text-center font-code text-muted-foreground">LOADING SYSTEM...</div>
     }
     if (appState === 'paywall') {
@@ -420,7 +341,5 @@ export default function Home() {
     </main>
   );
 }
-
-    
 
     
