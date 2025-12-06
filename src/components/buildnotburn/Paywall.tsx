@@ -12,6 +12,7 @@ import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
+import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -20,14 +21,15 @@ interface PaywallProps {
   user: User | null;
 }
 
+// Replace these with your actual Lemon Squeezy Variant IDs
 const plans = {
   builder: {
-    monthly: { price: 5, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
-    annually: { price: 50, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
+    monthly: { price: 5, variantId: 'REPLACE-WITH-BUILDER-MONTHLY-VARIANT-ID' },
+    annually: { price: 50, variantId: 'REPLACE-WITH-BUILDER-ANNUALLY-VARIANT-ID' },
   },
   architect: {
-    monthly: { price: 10, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
-    annually: { price: 100, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
+    monthly: { price: 10, variantId: 'REPLACE-WITH-ARCHITECT-MONTHLY-VARIANT-ID' },
+    annually: { price: 100, variantId: 'REPLACE-WITH-ARCHITECT-ANNUALLY-VARIANT-ID' },
   },
 };
 
@@ -44,7 +46,7 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
 export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean | string>(false);
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
@@ -92,26 +94,46 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
       }
   }
 
-    const handlePaidPlanSelect = async (plan: 'builder' | 'architect') => {
-        if (!user) {
-            toast({
-                title: "Please Sign In",
-                description: "You need to be signed in to choose a paid plan.",
-                variant: "destructive"
-            });
-            document.getElementById('email-input')?.focus();
-            return;
-        }
-
-        setIsLoading(true);
-        // Replace this with your Lemon Squeezy checkout logic
-        console.log(`User ${user.uid} selected ${plan} plan (${billingCycle})`);
+  const handlePaidPlanSelect = async (plan: 'builder' | 'architect') => {
+    if (!user) {
         toast({
-            title: "Redirecting to checkout...",
-            description: "Please implement your Lemon Squeezy logic here.",
+            title: "Please Sign In",
+            description: "You need to be signed in to choose a paid plan.",
+            variant: "destructive"
+        });
+        document.getElementById('email-input')?.focus();
+        return;
+    }
+
+    setIsLoading(plan); // Set loading state to the specific plan being processed
+    
+    try {
+        const selectedPlan = plans[plan][billingCycle];
+
+        const checkoutResponse = await createLemonSqueezyCheckout({
+            variantId: selectedPlan.variantId,
+            email: user.email!,
+            name: user.displayName || '',
+            userId: user.uid,
+            plan: plan,
+        });
+
+        if (checkoutResponse.checkoutUrl) {
+            // Redirect to Lemon Squeezy checkout
+            window.location.href = checkoutResponse.checkoutUrl;
+        } else {
+            throw new Error('Could not create a checkout session.');
+        }
+    } catch (error: any) {
+        console.error("Checkout failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Checkout Error",
+            description: error.message || "There was a problem redirecting you to checkout. Please try again.",
         });
         setIsLoading(false);
-    };
+    }
+  };
 
 
   return (
@@ -199,8 +221,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={isLoading}>
-                {isLoading ? 'Processing...' : user ? 'Become a Builder' : 'Sign in to Choose'}
+            <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={!!isLoading}>
+                {isLoading === 'builder' ? 'Processing...' : user ? 'Become a Builder' : 'Sign in to Choose'}
             </Button>
           </CardFooter>
         </Card>
@@ -236,8 +258,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-             <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={isLoading}>
-                {isLoading ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Choose'}
+             <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={!!isLoading}>
+                {isLoading === 'architect' ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Choose'}
             </Button>
           </CardFooter>
         </Card>
@@ -258,7 +280,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4">
-                            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading} className="h-12 text-base border-2">
+                            <Button variant="outline" onClick={handleGoogleLogin} disabled={!!isLoading} className="h-12 text-base border-2">
                                 {isLoading ? 'Signing in...' : (
                                     <>
                                         <GoogleIcon className="h-6 w-6 mr-2" />
@@ -279,11 +301,11 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                                     placeholder="Enter your email address"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    disabled={isLoading}
+                                    disabled={!!isLoading}
                                     required
                                     className="h-12 text-base"
                                 />
-                                <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading}>
+                                <Button type="submit" className="h-12 font-bold text-base" disabled={!!isLoading}>
                                     {isLoading ? 'Sending...' : 'Send Sign-in Link'}
                                 </Button>
                             </form>
