@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Archive } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 

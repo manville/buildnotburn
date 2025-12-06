@@ -7,14 +7,18 @@ import { BrickList } from "@/components/buildnotburn/BrickList";
 import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
 import { Wall } from "@/components/buildnotburn/Wall";
 import type { Brick, AuditAnswers } from "@/types";
+import { generateInitialBricks } from "@/lib/mock-data";
 
 const MAX_BRICKS_HIGH = 3;
 const MAX_BRICKS_MEDIUM = 2;
 const MAX_BRICKS_LOW = 1;
 
+const { completed, incomplete } = generateInitialBricks();
+
 export default function Home() {
-  const [bricks, setBricks] = useState<Brick[]>([]);
+  const [bricks, setBricks] = useState<Brick[]>(incomplete);
   const [burnPile, setBurnPile] = useState<Brick[]>([]);
+  const [completedBricks, setCompletedBricks] = useState<Brick[]>(completed);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
 
   const handleAuditSubmit = (answers: AuditAnswers) => {
@@ -46,14 +50,22 @@ export default function Home() {
   };
 
   const removeBrick = (id: number) => {
-    setBricks(prevBricks =>
-      prevBricks.map(brick =>
-        brick.id === id ? { ...brick, isCompleted: true } : brick
-      )
-    );
+    let completedBrick: Brick | undefined;
+    const newBricks = bricks.filter(brick => {
+      if (brick.id === id) {
+        completedBrick = { ...brick, isCompleted: true };
+        return false;
+      }
+      return true;
+    });
+
+    setBricks(newBricks);
+    if (completedBrick) {
+      setCompletedBricks(prev => [...prev, completedBrick]);
+    }
   };
 
-  const allBricks = [...bricks, ...burnPile];
+  const allBricks = [...bricks, ...burnPile, ...completedBricks];
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
