@@ -1,4 +1,3 @@
-
 'use client';
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';

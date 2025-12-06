@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { sendSignInLink } from '@/firebase/auth';
+import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
+import { Separator } from '../ui/separator';
 
 
 type Plan = 'trial' | 'builder' | 'architect';
@@ -31,6 +32,16 @@ const plans = {
   },
 };
 
+const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px" {...props}>
+        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.651-3.356-11.303-8H6.306C9.663,35.663,16.318,44,24,44z" />
+        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.622,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+    </svg>
+);
+
+
 export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
   const [email, setEmail] = useState('');
@@ -42,7 +53,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
   };
 
-  const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) {
         toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email address.' });
@@ -62,6 +73,25 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     } finally {
         setIsLoading(false);
     }
+  }
+
+  const handleGoogleLogin = async () => {
+      setIsLoading(true);
+      try {
+        const userCredential = await signInWithGoogle();
+        // The useUser hook will handle the redirect, but we can also create the user doc here
+        if (userCredential.user) {
+            await getOrCreateUser(userCredential.user);
+        }
+      } catch (error: any) {
+          toast({
+              variant: 'destructive',
+              title: 'Google Sign-In Failed',
+              description: error.message || 'Could not sign in with Google. Please try again.',
+          });
+      } finally {
+          setIsLoading(false);
+      }
   }
 
   return (
@@ -207,21 +237,37 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                             <p className="text-xs text-muted-foreground/80 mt-4">Close this tab and click the link in the email to sign in.</p>
                         </div>
                     ) : (
-                        <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
-                            <Input
-                                id="email-input"
-                                type="email"
-                                placeholder="Enter your email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                disabled={isLoading}
-                                required
-                                className="h-12 text-base"
-                            />
-                            <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading}>
-                                {isLoading ? 'Sending...' : 'Send Sign-in Link'}
+                        <div className="flex flex-col gap-4">
+                            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading} className="h-12 text-base border-2">
+                                {isLoading ? 'Signing in...' : (
+                                    <>
+                                        <GoogleIcon className="h-6 w-6 mr-2" />
+                                        Sign in with Google
+                                    </>
+                                )}
                             </Button>
-                        </form>
+
+                            <div className="relative">
+                                <Separator />
+                                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OR</span>
+                            </div>
+
+                            <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
+                                <Input
+                                    id="email-input"
+                                    type="email"
+                                    placeholder="Enter your email address"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    disabled={isLoading}
+                                    required
+                                    className="h-12 text-base"
+                                />
+                                <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading}>
+                                    {isLoading ? 'Sending...' : 'Send Sign-in Link'}
+                                </Button>
+                            </form>
+                        </div>
                     )}
                 </CardContent>
             </Card>
