@@ -46,10 +46,15 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
   const [recentlyCompleted, setRecentlyCompleted] = React.useState<string[]>([]);
   const [today, setToday] = React.useState(new Date());
   const prevBricksRef = React.useRef<Brick[]>(bricks);
+  const scrollViewportRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     // This effect runs only on the client, preventing hydration mismatch.
     setToday(new Date());
+    // Scroll to the end (today) on initial load
+    if (scrollViewportRef.current) {
+        scrollViewportRef.current.scrollLeft = scrollViewportRef.current.scrollWidth;
+    }
   }, []);
 
   React.useEffect(() => {
@@ -108,7 +113,7 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
           </div>
         </div>
       </div>
-      <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border bg-card">
+      <ScrollArea viewportRef={scrollViewportRef} className="w-full whitespace-nowrap rounded-lg border border-border bg-card">
         <TooltipProvider delayDuration={0}>
           <div className="flex w-max space-x-1.5 p-4 h-48 items-end">
             {wallData.map(({ date, completedBricks, totalCompleted }) => (
