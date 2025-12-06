@@ -161,20 +161,21 @@ export default function Home() {
     setPlan(selectedPlan);
 
     if (user && db && writeToDb) {
-      const userRef = doc(db, "users", user.uid);
-      setDoc(userRef, { plan: selectedPlan }, { merge: true });
+        const userRef = doc(db, "users", user.uid);
+        setDoc(userRef, { plan: selectedPlan }, { merge: true });
     }
-    
+
     if (selectedPlan === 'trial') {
-      setMaxBricks(TRIAL_MAX_BRICKS);
-      setAppState('building');
+        setMaxBricks(TRIAL_MAX_BRICKS);
+        setAppState('building');
     } else if (selectedPlan === 'builder') {
-      setAppState('audit');
+        setAppState('audit');
     } else if (selectedPlan === 'architect') {
-      setMaxBricks(Infinity); 
-      setAppState('building');
+        setMaxBricks(Infinity); 
+        setAppState('building');
     }
   };
+
 
   const handleAuditSubmit = (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
@@ -419,3 +420,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
