@@ -3,8 +3,9 @@ import type { FC, DragEvent } from 'react';
 import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Flame, GripVertical } from 'lucide-react';
+import { Check, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { playSound } from '@/lib/play-sound';
 
 
 interface BrickItemProps {
@@ -51,6 +52,7 @@ export const BrickItem: FC<BrickItemProps> = ({
   isDragging
 }) => {
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isBurning, setIsBurning] = useState(false);
 
   const handleComplete = () => {
     if (readOnly) return;
@@ -62,7 +64,11 @@ export const BrickItem: FC<BrickItemProps> = ({
   
   const handleBurn = () => {
     if (burnBrick) {
-      burnBrick(brick.id);
+      setIsBurning(true);
+      playSound('thud');
+      setTimeout(() => {
+        burnBrick(brick.id);
+      }, 500); // Animation duration
     }
   }
 
@@ -79,12 +85,12 @@ export const BrickItem: FC<BrickItemProps> = ({
         readOnly ? "border-dashed border-amber-900/60 bg-card/50" : "hover:bg-secondary/50",
         brick.isCompleted && "bg-green-900/30 border-green-700/50",
         isCompleting && "animate-brick-fall",
+        isBurning && "animate-brick-burn",
         isDragging && "opacity-50",
         isBuilding && "cursor-grab"
       )}
     >
       <div className="flex items-center gap-3">
-        {isBuilding && <GripVertical className="h-5 w-5 text-muted-foreground/50 transition-opacity group-hover:opacity-0" />}
         {readOnly && <Flame className="h-4 w-4 text-amber-600/70" />}
         {!readOnly && !isCompleting && <BrickIcon className="h-4 w-4 text-primary/70" />}
         <span className={cn(
@@ -101,9 +107,9 @@ export const BrickItem: FC<BrickItemProps> = ({
           <>
              <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={handleBurn}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 font-bold uppercase text-xs"
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
                 aria-label={`Burn task: ${brick.text}`}
               >
                 <Flame className="h-4 w-4" />
@@ -115,7 +121,8 @@ export const BrickItem: FC<BrickItemProps> = ({
                 className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
                 aria-label={`Complete task: ${brick.text}`}
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 mr-1" />
+                Complete
               </Button>
           </>
         )}

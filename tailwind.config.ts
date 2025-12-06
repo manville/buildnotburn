@@ -104,6 +104,10 @@ export default {
         'brick-fall': {
           '0%': { transform: 'translateY(0) scale(1)', opacity: '1' },
           '100%': { transform: 'translateY(20px) scale(0)', opacity: '0', height: '0', padding: '0', margin: '0', border: '0'},
+        },
+        'brick-burn': {
+          '0%': { transform: 'scale(1)', opacity: '1' },
+          '100%': { transform: 'scale(0)', opacity: '0', height: '0', padding: '0', margin: '0', border: '0' },
         }
       },
       animation: {
@@ -111,6 +115,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'brick-lay': 'brick-lay 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
         'brick-fall': 'brick-fall 0.7s ease-in-out forwards',
+        'brick-burn': 'brick-burn 0.5s ease-out forwards',
       },
     },
   },
