@@ -17,34 +17,30 @@ import Link from 'next/link';
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 100 100"
-        className={className}
-        aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
     >
-        <path
-            fill="hsl(var(--foreground))"
-            d="M50 0C30 15 20 30 20 50c0 25 20 50 30 50s30-25 30-50C80 30 70 15 50 0zm0 85c-10 0-20-15-20-35S40 15 50 15s20 15 20 35-10 35-20 35z"
-            transform="scale(1.2) translate(-8.3, -5)"
+        <path 
+            fill="hsl(var(--primary))" 
+            stroke="hsl(var(--primary))"
+            d="M12.35 2.2c.26.04.5.13.73.28 1.57.98 2.63 3.06 2.63 5.26 0 2.4-1.31 4.6-3.13 5.65a4.35 4.35 0 0 1-1.18.41c-.4.1-.8.1-1.2.01-.2-.05-.39-.12-.58-.21a3.42 3.42 0 0 0-2.07-2.07c-.1-.19-.17-.38-.21-.58-.1-.4-.1-.8.01-1.2.1-.4.28-.77.5-1.1.9-1.33 2.5-2.26 4.36-2.45Z"
         />
-        <g transform="translate(5, 5)">
-            <path
-                fill="hsl(var(--primary))"
-                d="M50 45 L30 55 L70 55 Z"
-            />
-            <path
-                fill="hsl(var(--primary))"
-                stroke="hsl(var(--background))"
-                strokeWidth="3"
-                d="M30 56 L30 68 L70 68 L70 56 Z M25 69 L25 81 L75 81 L75 69 Z"
-            />
-             <path
-                fill="hsl(var(--primary))"
-                stroke="hsl(var(--background))"
-                strokeWidth="3"
-                d="M50 45 L30 55 L70 55 Z M30 56 L30 68 L70 68 L70 56 Z M25 69 L25 81 L75 81 L75 69 Z"
-            />
-        </g>
+        <path 
+            fill="currentColor"
+            stroke="currentColor"
+            d="M17.5 7.5c0 2.49-1.57 4.5-3.5 4.5S10.5 9.99 10.5 7.5 12.07 3 14 3s3.5 2.01 3.5 4.5ZM9.5 21.5c0-2.49 1.57-4.5 3.5-4.5s3.5 2.01 3.5 4.5-1.57 4.5-3.5 4.5-3.5-2.01-3.5-4.5Z" opacity="0.4"
+        />
+        <path 
+            fill="hsl(var(--background))"
+            d="M10.15 8.15h3.7v7.7h-3.7v-7.7Z"
+        />
     </svg>
 );
 
