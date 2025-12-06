@@ -1,8 +1,9 @@
+
 import type { FC } from 'react';
 import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Flame } from 'lucide-react';
+import { Check, Flame, Hammer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -24,6 +25,8 @@ export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = f
     }, 700); // Corresponds to animation duration
   };
 
+  const isBuilding = !readOnly && !brick.isCompleted;
+
   return (
     <li className={cn(
       "group bg-card border border-border rounded-lg p-4 flex justify-between items-center transition-all",
@@ -34,6 +37,7 @@ export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = f
       
       <div className="flex items-center gap-3">
         {readOnly && <Flame className="h-4 w-4 text-amber-600/70" />}
+        {isBuilding && <Hammer className="h-4 w-4 text-primary/70" />}
         <span className={cn(
           "font-code uppercase",
           readOnly && "text-muted-foreground/60 line-through",
