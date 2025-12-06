@@ -4,15 +4,11 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 
 export const metadata: Metadata = {
   title: 'BuildNotBurn',
   description: 'The Sustainable System for Long-Term Creators.',
 };
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function RootLayout({
   children,
@@ -34,9 +30,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
             <FirebaseClientProvider>
-                <Elements stripe={stripePromise}>
-                    {children}
-                </Elements>
+                {children}
                 <Toaster />
             </FirebaseClientProvider>
         </ThemeProvider>

@@ -14,6 +14,7 @@ import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/au
 import { Separator } from '../ui/separator';
 import { createCheckoutSession } from '@/ai/flows/stripe-checkout-flow';
 import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -42,7 +43,9 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+const PaywallContent: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -313,3 +316,10 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     </div>
   );
 };
+
+
+export const Paywall: FC<PaywallProps> = (props) => (
+    <Elements stripe={stripePromise}>
+        <PaywallContent {...props} />
+    </Elements>
+)
