@@ -28,6 +28,16 @@ export default function Home() {
 
   const addBrick = (text: string) => {
     if (!text.trim()) return;
+
+    if (maxBricks !== null && bricks.length >= maxBricks) {
+      toast({
+        variant: "destructive",
+        title: "Daily Limit Reached",
+        description: "Focus on your current bricks or move one to the burn pile.",
+      });
+      return;
+    }
+
     const newBrick: Brick = {
       id: Date.now(),
       text: text.toUpperCase(),
