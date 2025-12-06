@@ -3,7 +3,7 @@ import type { FC } from 'react';
 import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Flame, Hammer } from 'lucide-react';
+import { Check, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -12,6 +12,29 @@ interface BrickItemProps {
   removeBrick: (id: number) => void;
   readOnly?: boolean;
 }
+
+const BrickIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M12 9v6" />
+    <path d="M3 9h18" />
+    <path d="M3 15h18" />
+    <path d="M9 3v18" />
+    <path d="M15 3v18" />
+  </svg>
+);
+
 
 export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = false }) => {
   const [isCompleting, setIsCompleting] = useState(false);
@@ -37,7 +60,7 @@ export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = f
       
       <div className="flex items-center gap-3">
         {readOnly && <Flame className="h-4 w-4 text-amber-600/70" />}
-        {isBuilding && <Hammer className="h-4 w-4 text-primary/70" />}
+        {isBuilding && <BrickIcon className="h-4 w-4 text-primary/70" />}
         <span className={cn(
           "font-code uppercase",
           readOnly && "text-muted-foreground/60 line-through",
