@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,9 +27,9 @@ const GoogleIcon = () => (
 interface SignInModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGoogleSignIn?: () => void;
-  onEmailSubmit?: (name: string, email: string) => void;
-  showEmailNameFields?: boolean;
+  onGoogleSignIn: () => Promise<void>;
+  onEmailSubmit: (name: string, email: string) => Promise<void>;
+  variant?: 'signin' | 'signup';
 }
 
 export const SignInModal: React.FC<SignInModalProps> = ({ 
@@ -39,42 +37,28 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     onClose, 
     onGoogleSignIn,
     onEmailSubmit,
-    showEmailNameFields = false
+    variant = 'signin'
 }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState<'google' | 'email' | false>(false);
   const { toast } = useToast();
 
+  const isSignup = variant === 'signup';
+
   const handleGoogleClick = async () => {
     setIsLoading('google');
-    if (onGoogleSignIn) {
-      await onGoogleSignIn();
-    } else {
-      try {
-        const credential = await signInWithGoogle();
-        await getOrCreateUser(credential.user);
-        toast({ title: 'Signed in with Google' });
-        onClose();
-      } catch (error: any) {
-        console.error('Google Sign-in Error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Sign In Failed',
-          description: error.message || 'Could not sign in with Google.',
-        });
-      }
-    }
+    await onGoogleSignIn();
     setIsLoading(false);
   };
 
-  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
 
     setIsLoading('email');
     
-    if (onEmailSubmit && showEmailNameFields) {
+    if (isSignup) {
         if (!name) {
              toast({ variant: 'destructive', title: 'Name is required' });
              setIsLoading(false);
@@ -102,15 +86,31 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     setIsLoading(false);
   };
 
+  const defaultGoogleSignIn = async () => {
+      try {
+        const credential = await signInWithGoogle();
+        await getOrCreateUser(credential.user);
+        toast({ title: 'Signed in with Google' });
+        onClose();
+      } catch (error: any) {
+        console.error('Google Sign-in Error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Sign In Failed',
+          description: error.message || 'Could not sign in with Google.',
+        });
+      }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl uppercase">
-            {showEmailNameFields ? 'Complete Purchase' : 'Sign In'}
+            {isSignup ? 'Complete Purchase' : 'Sign In'}
           </DialogTitle>
           <DialogDescription>
-            {showEmailNameFields ? 'Enter your details to proceed to checkout.' : 'Sign in to access your account.'}
+            {isSignup ? 'Enter your details to proceed to checkout.' : 'Sign in to access your account.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -118,7 +118,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           <Button
             variant="outline"
             className="w-full h-12"
-            onClick={handleGoogleClick}
+            onClick={onGoogleSignIn ? handleGoogleClick : defaultGoogleSignIn}
             disabled={!!isLoading}
           >
             {isLoading === 'google' ? (
@@ -126,7 +126,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             ) : (
                 <>
                     <GoogleIcon />
-                    <span>Continue with Google</span>
+                    <span>{isSignup ? 'Sign Up with Google' : 'Sign In with Google'}</span>
                 </>
             )}
           </Button>
@@ -142,9 +142,9 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             </div>
           </div>
           
-          <form onSubmit={handleEmailSubmit}>
+          <form onSubmit={handleEmailFormSubmit}>
             <div className="space-y-4">
-                {showEmailNameFields && (
+                {isSignup && (
                      <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
                         <Input
@@ -174,7 +174,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
                     {isLoading === 'email' ? (
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
                     ) : (
-                        showEmailNameFields ? 'Proceed to Checkout' : 'Send Sign-In Link'
+                       isSignup ? 'Proceed to Checkout' : 'Send Sign-In Link'
                     )}
                 </Button>
             </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, type FC, type FormEvent } from 'react';
@@ -13,8 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '../ui/label';
 import { getOrCreateUser, signInWithGoogle } from '@/firebase/auth';
 import { SignInModal } from './SignInModal';
 
@@ -38,24 +35,13 @@ const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community')
 const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
 const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
 
-const GoogleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.651-3.356-11.303-8H6.306C9.663,35.663,16.318,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.622,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
-);
-
-
 export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annually');
   const [isLoading, setIsLoading] = useState<boolean | string>(false);
   const { toast } = useToast();
 
   const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle | 'free'} | null>(null);
-
-  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
   const plans = {
     trial: {
@@ -82,11 +68,11 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
     } else {
       setSelectedPlan({ plan, cycle });
-      setIsSignInModalOpen(true); 
+      setIsSignupModalOpen(true); 
     }
   };
 
-  const handleGoogleSignInAndCheckout = async () => {
+  const handleGoogleSignupAndCheckout = async () => {
     if (!selectedPlan) return;
     try {
         const credential = await signInWithGoogle();
@@ -97,11 +83,17 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
         console.error("Google Sign-In failed", error);
         toast({
             variant: "destructive",
-            title: "Sign-In Error",
-            description: "Could not sign in with Google. Please try again."
+            title: "Sign-Up Error",
+            description: "Could not sign up with Google. Please try again or use the email option."
         })
     }
   }
+
+  const handleEmailSignupAndCheckout = async (name: string, email: string) => {
+    if (!selectedPlan) return;
+    const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    await processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, email, name);
+  };
 
   const processCheckout = async (plan: Plan, cycle: BillingCycle | 'free', userId: string, email: string, name: string) => {
     setIsLoading(`${plan}-${cycle}`);
@@ -319,18 +311,12 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       </div>
 
       <SignInModal 
-        isOpen={isSignInModalOpen} 
-        onClose={() => setIsSignInModalOpen(false)}
-        onGoogleSignIn={handleGoogleSignInAndCheckout}
-        showEmailNameFields={true}
-        onEmailSubmit={async (name, email) => {
-            if (!selectedPlan) return;
-            const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-            processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, email, name);
-        }}
+        isOpen={isSignupModalOpen} 
+        onClose={() => setIsSignupModalOpen(false)}
+        onGoogleSignIn={handleGoogleSignupAndCheckout}
+        onEmailSubmit={handleEmailSignupAndCheckout}
+        variant="signup"
       />
     </>
   );
 };
-
-    
