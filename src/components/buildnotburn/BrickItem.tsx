@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
@@ -12,11 +13,23 @@ interface BrickItemProps {
 }
 
 export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = false }) => {
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleComplete = () => {
+    if (readOnly) return;
+    setIsCompleting(true);
+    // Wait for animation to finish before removing
+    setTimeout(() => {
+      removeBrick(brick.id);
+    }, 700); // Corresponds to animation duration
+  };
+
   return (
     <li className={cn(
       "group bg-card border border-border rounded-lg p-4 flex justify-between items-center transition-all",
       readOnly ? "border-dashed border-secondary/50 bg-card/50" : "hover:bg-secondary/50",
-      brick.isCompleted && "bg-green-900/30 border-green-700/50"
+      brick.isCompleted && "bg-green-900/30 border-green-700/50",
+      isCompleting && "animate-brick-fall"
       )}>
       <span className={cn(
         "font-code uppercase",
@@ -29,7 +42,7 @@ export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = f
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => removeBrick(brick.id)}
+          onClick={handleComplete}
           className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
           aria-label={`Complete task: ${brick.text}`}
         >

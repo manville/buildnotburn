@@ -43,20 +43,24 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRec
 
 
 export const Wall: FC<WallProps> = ({ bricks }) => {
+  const [completedIds, setCompletedIds] = React.useState<number[]>([]);
   const [recentlyCompleted, setRecentlyCompleted] = React.useState<number[]>([]);
 
   React.useEffect(() => {
-    const completedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
-    const newCompleted = completedIds.filter(id => !recentlyCompleted.includes(id));
+    const newCompletedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
+    const newBricks = newCompletedIds.filter(id => !completedIds.includes(id));
 
-    if (newCompleted.length > 0) {
-      setRecentlyCompleted(prev => [...prev, ...newCompleted]);
+    if (newBricks.length > 0) {
+      setRecentlyCompleted(newBricks);
       const timer = setTimeout(() => {
         setRecentlyCompleted([]);
-      }, 500); // Animation duration
+      }, 700); // Animation duration, should match CSS
+      
+      setCompletedIds(newCompletedIds);
+      
       return () => clearTimeout(timer);
     }
-  }, [bricks]);
+  }, [bricks, completedIds]);
 
   const wallData = Array.from({ length: NUM_DAYS }).map((_, i) => {
     const date = subDays(new Date(), i);
