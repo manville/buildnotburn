@@ -3,21 +3,34 @@ import crypto from 'crypto';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 
-// Initialize Firebase Admin SDK
-let app: App;
-if (getApps().length === 0) {
+// Lazily initialize Firebase Admin SDK
+function getFirebaseAdminApp(): App {
+    if (getApps().length > 0) {
+        return getApps()[0];
+    }
+
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        // This will only be thrown at runtime if the variable is missing
         throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
     }
-    app = initializeApp({
-        credential: cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS))
-    });
-} else {
-    app = getApps()[0];
+    
+    try {
+        const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        return initializeApp({
+            credential: cert(serviceAccount)
+        });
+    } catch (e: any) {
+        // This will catch the JSON.parse error during build, but allow runtime errors to surface
+        if (process.env.NODE_ENV === 'production') {
+            console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS:', e.message);
+            throw new Error('Server configuration error with Firebase credentials.');
+        }
+        // During build, we can create a dummy app to satisfy the type system
+        // but it won't be used.
+        return initializeApp();
+    }
 }
 
-
-const db = getFirestore(app);
 
 export async function POST(req: NextRequest) {
     const webhookSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
@@ -55,6 +68,9 @@ export async function POST(req: NextRequest) {
 
         // Handle 'subscription_created' or 'subscription_updated' events
         if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
+            const app = getFirebaseAdminApp();
+            const db = getFirestore(app);
+            
             const customerId = data.attributes.customer_id;
             const planVariantId = data.attributes.variant_id;
             const status = data.attributes.status; // e.g., 'active', 'past_due', 'cancelled'
