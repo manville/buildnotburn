@@ -32,7 +32,7 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRec
       className={cn(
         "w-full flex-1 rounded-[2px] transition-colors",
         isFilled
-          ? "bg-primary/70 group-hover:bg-primary"
+          ? "bg-primary group-hover:bg-primary/80"
           : "bg-secondary/30 group-hover:bg-secondary/50",
         isFilled && "border border-background/20",
         isRecent && 'animate-brick-lay'
