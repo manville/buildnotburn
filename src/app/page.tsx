@@ -17,7 +17,6 @@ import { useUser, useAuth, useFirestore } from '@/firebase';
 import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { getTodayString, getYesterdayString } from "@/lib/mock-data";
-import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building, Flame } from "lucide-react";
@@ -44,12 +43,12 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
-    // On first load, check if the user has seen the guide.
     const hasSeenGuide = localStorage.getItem('hasSeenGuide');
-    if (!hasSeenGuide) {
+    // Only show guide on first load if they are a paid user
+    if (!hasSeenGuide && (plan === 'builder' || plan === 'architect')) {
       setIsGuideOpen(true);
     }
-  }, []);
+  }, [plan]);
 
   const handleGuideClose = () => {
     localStorage.setItem('hasSeenGuide', 'true');
@@ -226,6 +225,8 @@ export default function Home() {
   const isAtBrickLimit = 
       (user && plan === 'trial' && allHistoricalBricks.filter(b => b.userId === user.uid).length >= TRIAL_MAX_BRICKS) ||
       (user && plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks);
+  
+  const isPaidUser = plan === 'builder' || plan === 'architect';
 
   const renderContent = () => {
     if (appState === 'loading') {
@@ -235,6 +236,7 @@ export default function Home() {
        return <Paywall 
          user={user}
          variantIds={{
+            newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
             builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
             builderAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID!,
             architectMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID!,
@@ -313,17 +315,16 @@ export default function Home() {
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-      <Header user={user} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} />
+      <Header user={user} plan={plan} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} />
       <div className="w-full flex-grow">
         {renderContent()}
       </div>
       <Wall bricks={allHistoricalBricks} />
       <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
-        <NewsletterForm />
         <ThemeSwitcher />
         <div className="flex items-center justify-center gap-4">
             <Link href="https://withcabin.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy</Link>
-            <button onClick={() => setIsGuideOpen(true)} className="hover:text-primary transition-colors">The Guide</button>
+            {isPaidUser && <button onClick={() => setIsGuideOpen(true)} className="hover:text-primary transition-colors">The Guide</button>}
             <Link href="mailto:support@buildnotburn.com" className="hover:text-primary transition-colors">Contact</Link>
         </div>
         <div>
@@ -337,7 +338,5 @@ export default function Home() {
     </main>
   );
 }
-
-    
 
     

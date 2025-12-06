@@ -10,17 +10,17 @@ import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '../ui/separator';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 
-type Plan = 'builder' | 'architect';
+type Plan = 'trial' | 'builder' | 'architect';
 type BillingCycle = 'monthly' | 'annually';
 
 interface VariantIds {
+    newsletter: string;
     builderMonthly: string;
     builderAnnually: string;
     architectMonthly: string;
@@ -32,15 +32,6 @@ interface PaywallProps {
   variantIds: VariantIds;
 }
 
-const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px" {...props}>
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.651-3.356-11.303-8H6.306C9.663,35.663,16.318,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.622,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
-);
-
 const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community');
 const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
 const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
@@ -51,11 +42,14 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
   const { toast } = useToast();
 
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle} | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle | 'free'} | null>(null);
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
 
   const plans = {
+    trial: {
+        free: { price: 0, variantId: variantIds.newsletter },
+    },
     builder: {
       monthly: { price: 8, variantId: variantIds.builderMonthly },
       annually: { price: 80, variantId: variantIds.builderAnnually },
@@ -71,13 +65,14 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
   };
 
-  const handlePaidPlanSelect = (plan: 'builder' | 'architect') => {
+  const handlePlanSelect = (plan: Plan) => {
+    const cycle = plan === 'trial' ? 'free' : billingCycle;
     if (user) {
       // If user is already logged in, proceed to checkout directly
-      processCheckout(plan, billingCycle, user.uid, user.email!, user.displayName || '');
+      processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
     } else {
       // If user is not logged in, open the signup modal
-      setSelectedPlan({ plan, cycle: billingCycle });
+      setSelectedPlan({ plan, cycle });
       setShowSignupModal(true);
     }
   };
@@ -94,17 +89,16 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
     }
     
     // Create a temporary, unique user ID for the checkout process.
-    // The webhook will later create a real Firebase user with this info.
     const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
     processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, signupEmail, signupName);
   }
 
-  const processCheckout = async (plan: 'builder' | 'architect', cycle: BillingCycle, userId: string, email: string, name: string) => {
+  const processCheckout = async (plan: Plan, cycle: BillingCycle | 'free', userId: string, email: string, name: string) => {
     setIsLoading(`${plan}-${cycle}`);
     
     try {
-      const planDetails = plans[plan][cycle];
+        const planDetails = (plans as any)[plan][cycle];
       
       if (!planDetails.variantId || planDetails.variantId.startsWith('REPLACE')) {
         toast({
@@ -119,7 +113,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       const checkoutResponse = await createLemonSqueezyCheckout({
         variantId: planDetails.variantId,
         email: email,
-        name: name,
+        name: plan === 'trial' ? 'Newsletter Subscriber' : name,
         userId: userId, // This can be a temp ID or a real one
         plan: plan,
       });
@@ -202,9 +196,9 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" disabled>
-                Available via Newsletter Signup
-              </Button>
+               <Button variant="outline" className="w-full" onClick={() => handlePlanSelect('trial')} disabled={!!isLoading}>
+                    {isLoading === 'trial-free' ? 'Processing...' : 'Join for Free'}
+                </Button>
             </CardFooter>
           </Card>
 
@@ -258,7 +252,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={!!isLoading}>
+              <Button className="w-full font-bold" onClick={() => handlePlanSelect('builder')} disabled={!!isLoading}>
                   {isLoading === `builder-${billingCycle}` ? 'Processing...' : 'Get the System'}
               </Button>
             </CardFooter>
@@ -307,7 +301,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={!!isLoading}>
+              <Button variant="secondary" className="w-full" onClick={() => handlePlanSelect('architect')} disabled={!!isLoading}>
                   {isLoading === `architect-${billingCycle}` ? 'Processing...' : 'Become an Architect'}
               </Button>
             </CardFooter>
@@ -320,7 +314,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl uppercase">One Final Step</DialogTitle>
             <DialogDescription>
-              Enter your name and email to proceed to checkout. Your account will be created after payment.
+              Enter your name and email to proceed. Your account will be created after.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSignupAndCheckout}>
@@ -353,7 +347,7 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
             </div>
             <DialogFooter>
               <Button type="submit" className="w-full font-bold" disabled={!!isLoading}>
-                {isLoading ? 'Processing...' : 'Proceed to Checkout'}
+                {isLoading ? 'Processing...' : 'Proceed'}
               </Button>
             </DialogFooter>
           </form>

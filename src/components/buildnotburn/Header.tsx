@@ -32,12 +32,15 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => (
 
 interface HeaderProps {
     user: User | null;
+    plan: 'trial' | 'builder' | 'architect' | null;
     onLogout: () => void;
     onOpenGuide: () => void;
 }
 
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenGuide }) => {
+export const Header: React.FC<HeaderProps> = ({ user, plan, onLogout, onOpenGuide }) => {
+    const isPaidUser = plan === 'builder' || plan === 'architect';
+
     return (
         <>
             <header className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-12 text-center select-none relative">
@@ -68,6 +71,12 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenGuide }) =
                                     <span>Review</span>
                                    </Link>
                                 </DropdownMenuItem>
+                                {isPaidUser && (
+                                     <DropdownMenuItem onClick={onOpenGuide}>
+                                        <BookOpen className="mr-2 h-4 w-4" />
+                                        <span>The Guide</span>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={onLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
@@ -94,12 +103,16 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenGuide }) =
                     <p className="font-code text-muted-foreground text-sm sm:text-base">
                         The Sustainable System for Long-Term Creators.
                     </p>
-                    <Button variant="link" onClick={onOpenGuide} className="text-primary/80 hover:text-primary">
-                        <BookOpen className="mr-2 h-4 w-4"/>
-                        Read The Guide
-                    </Button>
+                    {isPaidUser && (
+                        <Button variant="link" onClick={onOpenGuide} className="text-primary/80 hover:text-primary">
+                            <BookOpen className="mr-2 h-4 w-4"/>
+                            Read The Guide
+                        </Button>
+                    )}
                 </div>
             </header>
         </>
     );
 };
+
+    
