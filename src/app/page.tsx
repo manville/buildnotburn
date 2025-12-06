@@ -21,6 +21,7 @@ import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building, Flame } from "lucide-react";
+import Link from "next/link";
 
 
 type AppState = 'paywall' | 'audit' | 'building';
@@ -402,6 +403,11 @@ export default function Home() {
       <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
         <NewsletterForm />
         <ThemeSwitcher />
+        <div className="flex items-center justify-center gap-4">
+            <Link href="https://withcabin.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy</Link>
+            <button onClick={() => setIsGuideOpen(true)} className="hover:text-primary transition-colors">The Guide</button>
+            <Link href="mailto:support@buildnotburn.com" className="hover:text-primary transition-colors">Contact</Link>
+        </div>
         <div>
             <p>
             &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
