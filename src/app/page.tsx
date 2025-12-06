@@ -27,24 +27,15 @@ export default function Home() {
   };
 
   const addBrick = (text: string) => {
-    if (!text.trim() || maxBricks === null) return;
+    if (!text.trim()) return;
     const newBrick: Brick = {
       id: Date.now(),
       text: text.toUpperCase(),
       isCompleted: false,
       date: new Date().toISOString().split('T')[0],
     };
-
-    if (bricks.length < maxBricks) {
-      setBricks(prevBricks => [...prevBricks, newBrick]);
-    } else {
-      setBurnPile(prevBurnPile => [...prevBurnPile, newBrick]);
-      toast({
-        title: "Brick Sent to Burn Pile",
-        description: `You've reached your energy limit for today. Stay focused!`,
-        variant: 'destructive'
-      });
-    }
+    
+    setBricks(prevBricks => [...prevBricks, newBrick]);
   };
 
   const removeBrick = (id: number) => {
@@ -69,8 +60,10 @@ export default function Home() {
   };
 
 
-  const allBricks = [...bricks, ...burnPile, ...completedBricks];
-  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0 && completedBricks.filter(b => b.date === new Date().toISOString().split('T')[0]).length >= maxBricks;
+  const allBricksForWall = [...completedBricks, ...bricks.filter(b => b.isCompleted)];
+  
+  // A user can only lay more bricks if they have 0 bricks left in their "building" list.
+  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0;
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
@@ -98,7 +91,7 @@ export default function Home() {
           </>
         )}
       </div>
-      <Wall bricks={allBricks} />
+      <Wall bricks={allBricksForWall} />
       <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50">
         <p>
           &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
