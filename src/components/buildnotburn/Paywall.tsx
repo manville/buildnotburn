@@ -21,15 +21,14 @@ interface PaywallProps {
   user: User | null;
 }
 
-// Replace these with your actual Lemon Squeezy Variant IDs
 const plans = {
   builder: {
-    monthly: { price: 5, variantId: 'REPLACE-WITH-BUILDER-MONTHLY-VARIANT-ID' },
-    annually: { price: 50, variantId: 'REPLACE-WITH-BUILDER-ANNUALLY-VARIANT-ID' },
+    monthly: { price: 5, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID! },
+    annually: { price: 50, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID! },
   },
   architect: {
-    monthly: { price: 10, variantId: 'REPLACE-WITH-ARCHITECT-MONTHLY-VARIANT-ID' },
-    annually: { price: 100, variantId: 'REPLACE-WITH-ARCHITECT-ANNUALLY-VARIANT-ID' },
+    monthly: { price: 10, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID! },
+    annually: { price: 100, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID! },
   },
 };
 
@@ -109,6 +108,16 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     
     try {
         const selectedPlan = plans[plan][billingCycle];
+
+        if (!selectedPlan.variantId || selectedPlan.variantId.startsWith('REPLACE')) {
+             toast({
+                variant: "destructive",
+                title: "Configuration Error",
+                description: "The product variant IDs are not configured. Please add them to your .env file.",
+            });
+            setIsLoading(false);
+            return;
+        }
 
         const checkoutResponse = await createLemonSqueezyCheckout({
             variantId: selectedPlan.variantId,
@@ -213,6 +222,10 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span>Cloud data sync</span>
+              </li>
+               <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>Review Dashboard Analytics</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />

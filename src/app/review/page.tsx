@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Header } from '@/components/buildnotburn/Header';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { Paywall } from '@/components/buildnotburn/Paywall';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -59,6 +60,13 @@ export default function ReviewPage() {
             await signOut(auth);
         }
     };
+
+    const handlePlanSelect = (selectedPlan: Plan) => {
+        if (user && db) {
+            const userRef = doc(db, "users", user.uid);
+            setDoc(userRef, { plan: selectedPlan }, { merge: true });
+        }
+    }
     
     const renderContent = () => {
         if (isLoading || userLoading) {
@@ -78,17 +86,7 @@ export default function ReviewPage() {
         }
         
         if (plan === 'trial') {
-            return (
-                <div className="text-center max-w-lg mx-auto">
-                    <h2 className="font-headline text-2xl text-primary">Upgrade to View Your Review</h2>
-                    <p className="text-muted-foreground mt-2">
-                        The Review dashboard is a premium feature for Builders and Architects. Gain insights into your productivity and support the project by upgrading your plan.
-                    </p>
-                    <Button asChild className="mt-4">
-                        <Link href="/">Choose a Plan</Link>
-                    </Button>
-                </div>
-            )
+            return <Paywall onPlanSelect={handlePlanSelect} user={user} />;
         }
 
         if (analytics) {
