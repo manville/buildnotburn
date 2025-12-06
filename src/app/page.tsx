@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/lib/play-sound";
 import { Firebreak } from "@/components/buildnotburn/Firebreak";
 import { getInitialBricks, getTodayString } from "@/lib/mock-data";
+import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 
 export default function Home() {
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
@@ -151,11 +152,14 @@ export default function Home() {
         )}
       </div>
       <Wall bricks={allHistoricalBricks} />
-      <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50">
-        <p>
-          &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
-        </p>
-        <p>Concept reimagined in Next.js & Tailwind CSS.</p>
+      <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-4">
+        <ThemeSwitcher />
+        <div>
+            <p>
+            &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
+            </p>
+            <p>Concept reimagined in Next.js & Tailwind CSS.</p>
+        </div>
       </footer>
     </main>
   );
