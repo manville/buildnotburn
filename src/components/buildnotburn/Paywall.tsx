@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, type FC } from 'react';
@@ -137,7 +136,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start lg:pt-4">
           {/* Free Newsletter */}
           <Card className="border-border/60 overflow-hidden">
             {communityImage && (
@@ -183,7 +182,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
           </Card>
 
           {/* Builder Plan */}
-          <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden">
+          <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden transform lg:-translate-y-4">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold uppercase px-3 py-1 rounded-full">
               Recommended
             </div>
