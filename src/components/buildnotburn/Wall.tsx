@@ -1,4 +1,3 @@
-
 import type { FC, HTMLAttributes } from 'react';
 import React from 'react';
 import type { Brick } from '@/types';
@@ -16,7 +15,7 @@ interface WallProps {
   bricks: Brick[];
 }
 
-const NUM_DAYS = 10;
+const NUM_DAYS = 365;
 const MAX_BRICKS_PER_DAY = 3;
 
 type DayData = {
