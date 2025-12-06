@@ -1,54 +1,90 @@
 import type { FC } from 'react';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
-import { subDays, format } from 'date-fns';
+import { subDays, format, parseISO } from 'date-fns';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 interface WallProps {
   bricks: Brick[];
 }
 
 const NUM_DAYS = 90;
+const MAX_BRICKS_PER_DAY = 3;
 
 type DayData = {
   date: string;
-  completed: number;
+  completedBricks: Brick[];
+  totalCompleted: number;
 };
 
 export const Wall: FC<WallProps> = ({ bricks }) => {
+
   const wallData = Array.from({ length: NUM_DAYS }).map((_, i) => {
     const date = subDays(new Date(), i);
     const dateString = format(date, 'yyyy-MM-dd');
-    const completed = bricks.filter(b => b.date === dateString && b.isCompleted).length;
-    return { date: dateString, completed };
+    const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
+    return { date: dateString, completedBricks, totalCompleted: completedBricks.length };
   }).reverse();
-
-  const maxCompleted = Math.max(...wallData.map(d => d.completed), 1);
 
   return (
     <section className="mt-16 pb-8">
-      <h2 className="font-headline text-2xl text-center mb-4 uppercase">The Last 90 Days</h2>
-      <div className="bg-card border border-border rounded-lg p-4 h-48 flex justify-between items-end gap-[2px]">
-        {wallData.map(({ date, completed }) => {
-          const heightPercentage = (completed / maxCompleted) * 100;
-          return (
-            <div
-              key={date}
-              className="flex-1 h-full flex flex-col-reverse"
-              title={`${date}: ${completed} bricks`}
-            >
-              {completed > 0 && (
-                 <div
-                    className={cn(
-                        "w-full bg-primary/20 transition-all duration-500",
-                        completed > 0 && "bg-primary/70 hover:bg-primary"
-                    )}
-                    style={{ height: `${heightPercentage}%` }}
-                 />
-              )}
-            </div>
-          );
-        })}
+       <div className="flex justify-between items-end mb-4">
+        <h2 className="font-headline text-2xl uppercase">The Wall</h2>
+        <div className="flex items-center gap-4 font-code text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-secondary border border-border" />
+            <span>MISSED</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-primary" />
+            <span>BUILT</span>
+          </div>
+        </div>
       </div>
+      <TooltipProvider delayDuration={0}>
+        <div className="bg-card border border-border rounded-lg p-4 h-48 flex justify-between items-end gap-1">
+          {wallData.map(({ date, completedBricks, totalCompleted }) => (
+            <Tooltip key={date}>
+              <TooltipTrigger asChild>
+                <div
+                  className="flex-1 h-full flex flex-col-reverse justify-start gap-1"
+                >
+                  {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "w-full flex-1 rounded-[2px] transition-colors",
+                        i < totalCompleted
+                          ? "bg-primary/70 group-hover:bg-primary"
+                          : "bg-secondary/30 group-hover:bg-secondary/50",
+                        (totalCompleted > 0 || i > 0) && "border border-background/20"
+                      )}
+                    />
+                  ))}
+                </div>
+              </TooltipTrigger>
+              {completedBricks.length > 0 && (
+                <TooltipContent>
+                  <p className="font-bold text-primary font-code">{format(parseISO(date), 'PPP')}</p>
+                  <ul className="mt-2 space-y-1">
+                    {completedBricks.map(brick => (
+                      <li key={brick.id} className="font-code text-xs">
+                        <span className="text-primary mr-2">&gt;</span> {brick.text}
+                      </li>
+                    ))}
+                  </ul>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
     </section>
   );
 };
