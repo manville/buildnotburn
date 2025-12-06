@@ -71,7 +71,20 @@ This product will be used to capture emails for your newsletter.
 1133276
 ---
 
-## 2. Lemon Squeezy: Create the Webhook
+## 2. Lemon Squeezy: Get Your API Key and Store ID
+
+You need your API Key to create checkouts and your Store ID to link them to your store.
+
+1.  In your Lemon Squeezy dashboard, go to **Settings > API**.
+2.  Click **New API Key**.
+3.  Give it a name (e.g., "BuildNotBurn App") and click **Create**.
+4.  **Copy the API key immediately.** It will only be shown once.
+5.  Now, go to **Settings > Stores**.
+6.  You will see your store listed. The **Store ID** is the number shown next to the store name (e.g., `Store #12345`). Copy this number.
+
+---
+
+## 3. Lemon Squeezy: Create the Webhook
 
 The webhook is how Lemon Squeezy tells your app that a payment was successful.
 
@@ -85,7 +98,7 @@ The webhook is how Lemon Squeezy tells your app that a payment was successful.
 BuildM4nvill3NotBurn
 ---
 
-## 3. Firebase: Get Service Account Credentials
+## 4. Firebase: Get Service Account Credentials
 
 Your webhook needs to securely communicate with your Firestore database. To do this, you need a "service account," which is a special credential for server-to-server communication.
 
@@ -100,7 +113,7 @@ Your webhook needs to securely communicate with your Firestore database. To do t
 
 ---
 
-## 4. Update Your Application's Environment File
+## 5. Update Your Application's Environment File
 
 Now, open the `.env` file in your project and fill in all the values you just collected.
 
@@ -144,3 +157,4 @@ GOOGLE_APPLICATION_CREDENTIALS='REPLACE_WITH_YOUR_SINGLE_LINE_JSON_CREDENTIALS'
 ```
 
 After you have completed these steps, your application will be fully connected and ready for production.
+
