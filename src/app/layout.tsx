@@ -1,11 +1,13 @@
-import type {Metadata} from 'next';
+
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
-  title: 'BuildNotBurn CFML',
-  description: 'A Lucee/CFML & HTMX Demo, Reimagined in Next.js.',
+  title: 'BuildNotBurn',
+  description: 'The Sustainable System for Long-Term Creators.',
 };
 
 export default function RootLayout({
@@ -22,13 +24,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <FirebaseProvider>
+            {children}
+            <Toaster />
+          </FirebaseProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,8 +1,13 @@
+
+import { FieldValue } from "firebase/firestore";
+
 export type Brick = {
-  id: number;
+  id: string;
   text: string;
   isCompleted: boolean;
   date: string; // YYYY-MM-DD
+  userId: string;
+  createdAt: FieldValue | string;
 };
 
 export interface AuditAnswers {

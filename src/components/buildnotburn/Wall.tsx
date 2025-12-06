@@ -1,8 +1,9 @@
+
 import type { FC, HTMLAttributes } from 'react';
 import React from 'react';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
-import { subDays, format, parseISO } from 'date-fns';
+import { subDays, format, parseISO, parse } from 'date-fns';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -42,7 +43,7 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRec
 
 
 export const Wall: FC<WallProps> = ({ bricks }) => {
-  const [recentlyCompleted, setRecentlyCompleted] = React.useState<number[]>([]);
+  const [recentlyCompleted, setRecentlyCompleted] = React.useState<string[]>([]);
   const [today, setToday] = React.useState(new Date());
   const prevBricksRef = React.useRef<Brick[]>(bricks);
 
@@ -65,20 +66,31 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
       return () => clearTimeout(timer);
     }
     
-    // Update the ref after the logic has run
     prevBricksRef.current = bricks;
 
   }, [bricks]);
 
   const wallData = React.useMemo(() => {
     const data: DayData[] = [];
+    const brickMap = new Map<string, Brick[]>();
+
+    bricks.forEach(brick => {
+      if (brick.isCompleted && brick.date) {
+        const dateString = format(parse(brick.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd');
+        if (!brickMap.has(dateString)) {
+          brickMap.set(dateString, []);
+        }
+        brickMap.get(dateString)!.push(brick);
+      }
+    });
+
     for (let i = 0; i < NUM_DAYS; i++) {
         const date = subDays(today, i);
         const dateString = format(date, 'yyyy-MM-dd');
-        const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
+        const completedBricks = brickMap.get(dateString) || [];
         data.push({ date: dateString, completedBricks, totalCompleted: completedBricks.length });
     }
-    return data;
+    return data.reverse();
   }, [bricks, today]);
 
   return (

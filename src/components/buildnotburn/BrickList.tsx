@@ -10,17 +10,17 @@ import suggestionData from '@/data/suggestions.json';
 
 interface BrickListProps {
   bricks: Brick[];
-  removeBrick: (id: number) => void;
-  burnBrick?: (id: number) => void;
-  reorderBricks?: (fromId: number, toId: number) => void;
+  completeBrick?: (id: string) => void;
+  burnBrick?: (id: string) => void;
+  reorderBricks?: (fromId: string, toId: string) => void;
   variant?: 'build' | 'burn';
   maxBricks?: number | null;
   onPlaceholderClick?: (text: string) => void;
 }
 
-export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks, onPlaceholderClick }) => {
+export const BrickList: FC<BrickListProps> = ({ bricks, completeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks, onPlaceholderClick }) => {
   const isBurnPile = variant === 'burn';
-  const dragItemId = useRef<number | null>(null);
+  const dragItemId = useRef<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
@@ -30,13 +30,13 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
   }, []);
 
 
-  const handleDragStart = (e: DragEvent<HTMLLIElement>, id: number) => {
+  const handleDragStart = (e: DragEvent<HTMLLIElement>, id: string) => {
     dragItemId.current = id;
     setDragging(true);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragEnter = (e: DragEvent<HTMLLIElement>, id: number) => {
+  const handleDragEnter = (e: DragEvent<HTMLLIElement>, id: string) => {
     if (!reorderBricks || dragItemId.current === null || dragItemId.current === id) return;
     reorderBricks(dragItemId.current, id);
   };
@@ -59,7 +59,8 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
   
   const renderPlaceholders = () => {
     if (variant !== 'build' || !maxBricks || !onPlaceholderClick) return null;
-    const placeholderCount = maxBricks - bricks.length;
+    const placeholderCount = maxBricks > bricks.length ? maxBricks - bricks.length : 0;
+    
     return Array.from({ length: placeholderCount }).map((_, index) => (
       <BrickPlaceholder 
         key={`placeholder-${index}`}
@@ -82,7 +83,7 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
           <BrickItem 
             key={brick.id} 
             brick={brick} 
-            removeBrick={removeBrick} 
+            completeBrick={completeBrick!} 
             burnBrick={burnBrick}
             readOnly={isBurnPile}
             onDragStart={!isBurnPile ? handleDragStart : undefined}

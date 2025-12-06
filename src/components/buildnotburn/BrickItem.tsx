@@ -11,11 +11,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface BrickItemProps {
   brick: Brick;
-  removeBrick: (id: number) => void;
-  burnBrick?: (id: number) => void;
+  completeBrick: (id: string) => void;
+  burnBrick?: (id: string) => void;
   readOnly?: boolean;
-  onDragStart?: (e: DragEvent<HTMLLIElement>, id: number) => void;
-  onDragEnter?: (e: DragEvent<HTMLLIElement>, id: number) => void;
+  onDragStart?: (e: DragEvent<HTMLLIElement>, id: string) => void;
+  onDragEnter?: (e: DragEvent<HTMLLIElement>, id: string) => void;
   onDragEnd?: (e: DragEvent<HTMLLIElement>) => void;
   isDragging?: boolean;
 }
@@ -44,7 +44,7 @@ const BrickIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export const BrickItem: FC<BrickItemProps> = ({ 
   brick, 
-  removeBrick, 
+  completeBrick, 
   burnBrick,
   readOnly = false,
   onDragStart,
@@ -59,7 +59,7 @@ export const BrickItem: FC<BrickItemProps> = ({
     if (readOnly) return;
     setIsCompleting(true);
     setTimeout(() => {
-      removeBrick(brick.id);
+      completeBrick(brick.id);
     }, 700);
   };
   
