@@ -64,8 +64,13 @@ export default function Home() {
     }
   };
 
+  const handleLayMore = () => {
+    setMaxBricks(prev => (prev ? prev + 1 : 1));
+  };
+
+
   const allBricks = [...bricks, ...burnPile, ...completedBricks];
-  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0 && maxBricks > 0;
+  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0 && completedBricks.filter(b => b.date === new Date().toISOString().split('T')[0]).length >= maxBricks;
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
@@ -76,7 +81,7 @@ export default function Home() {
         ) : (
           <>
             {allDailyBricksCompleted ? (
-              <Firebreak />
+              <Firebreak onLayMore={handleLayMore} />
             ) : (
               <BrickForm addBrick={addBrick} />
             )}
