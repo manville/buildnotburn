@@ -11,11 +11,11 @@ import type { Brick } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/lib/play-sound";
 import { Firebreak } from "@/components/buildnotburn/Firebreak";
-import { getInitialBricks, getTodayString } from "@/lib/mock-data";
+import { getTodayString } from "@/lib/mock-data";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, getDoc, writeBatch } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 
 type AppState = 'paywall' | 'audit' | 'building';
@@ -24,36 +24,76 @@ type Plan = 'trial' | 'builder' | 'architect';
 const TRIAL_MAX_BRICKS = 3;
 
 export default function Home() {
-  const [appState, setAppState] = useState<AppState>('paywall');
+  const [appState, setAppState] = useState<AppState>('building'); // Default to building
   const [plan, setPlan] = useState<Plan | null>(null);
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
-  const [maxBricks, setMaxBricks] = useState<number | null>(null);
+  const [maxBricks, setMaxBricks] = useState<number | null>(3); // Default for anonymous users
   const [newBrickText, setNewBrickText] = useState("");
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
 
-  const loadMockData = useCallback(() => {
-    const { allBricks } = getInitialBricks();
-    setAllHistoricalBricks(allBricks);
-    setPlan(null);
-    setAppState('paywall');
-  }, []);
+  // This function syncs in-memory bricks to a new user's account
+  const syncAnonymousBricks = async (userId: string) => {
+    if (!db || allHistoricalBricks.length === 0) return;
+    
+    // Check if these are still the default mock bricks
+    const isDefaultData = allHistoricalBricks.some(b => typeof b.id === 'number');
+    if (isDefaultData) {
+      // Don't sync the initial demo bricks, just clear them
+      setAllHistoricalBricks([]);
+      return;
+    }
+
+    const batch = writeBatch(db);
+    const bricksCol = collection(db, `users/${userId}/bricks`);
+
+    allHistoricalBricks.forEach(brick => {
+      const newBrickRef = doc(bricksCol); // Generate new ID
+      const brickData: Omit<Brick, 'id'> = {
+        text: brick.text,
+        isCompleted: brick.isCompleted,
+        date: brick.date,
+        userId: userId,
+        createdAt: serverTimestamp(), // Use server time
+      };
+      batch.set(newBrickRef, brickData);
+    });
+
+    try {
+      await batch.commit();
+      // The onSnapshot listener will now fetch the synced bricks
+    } catch (error) {
+      console.error("Error syncing bricks:", error);
+      toast({
+        variant: "destructive",
+        title: "Sync Error",
+        description: "Could not save your initial bricks.",
+      });
+    }
+  };
+
 
   useEffect(() => {
     if (userLoading) {
       return; 
     }
     if (!user) {
-      loadMockData();
+      // User is not logged in, stay in building mode with local state
+      setAppState('building');
+      setPlan(null); // Explicitly null for anon users
+      setMaxBricks(TRIAL_MAX_BRICKS); // Anon users get trial limit
       return;
     }
     if (!db) {
       return;
     }
 
-    // Fetch user's plan and data from Firestore
+    // At this point, we have a logged-in user.
+    // Sync any existing local bricks to their account.
+    syncAnonymousBricks(user.uid);
+    
     const userRef = doc(db, `users/${user.uid}`);
     const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
 
@@ -62,37 +102,33 @@ export default function Home() {
       setAllHistoricalBricks(bricksFromDb);
     });
 
-    getDoc(userRef).then(userDoc => {
+    const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const userPlan = userData.plan || null;
-        if (userPlan) {
-          handlePlanSelect(userPlan, false); // Don't write back to DB
-        } else {
-          setAppState('paywall');
-        }
+        const userPlan: Plan = userData.plan || 'trial';
+        handlePlanSelect(userPlan, false); // Don't write back to DB
       } else {
-        // This case handles first-time login after email link verification
-        setDoc(userRef, {
-            id: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            plan: 'trial' // Default to trial on first login
-        }, { merge: true }).then(() => {
+        // This case handles first-time login after email/Google
+        // The getOrCreateUser function should handle this, but as a fallback:
+        setDoc(userRef, { plan: 'trial' }, { merge: true }).then(() => {
             handlePlanSelect('trial', false);
         });
       }
     });
 
-    return () => unsubscribe();
-  }, [user, userLoading, db, loadMockData]);
+    return () => {
+      unsubscribe();
+      unsubscribeUser();
+    }
+  }, [user, userLoading, db]);
 
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      // State will reset via useEffect
+      setAllHistoricalBricks([]); // Clear bricks on logout
+      setAppState('building'); // Return to default building state
+      setPlan(null);
     }
   };
 
@@ -108,8 +144,6 @@ export default function Home() {
       setMaxBricks(TRIAL_MAX_BRICKS);
       setAppState('building');
     } else if (selectedPlan === 'builder') {
-      // For existing builders, we might want to skip the audit
-      // For now, we'll show it every time they select the plan
       setAppState('audit');
     } else if (selectedPlan === 'architect') {
       setMaxBricks(Infinity); 
@@ -129,7 +163,35 @@ export default function Home() {
   const addBrick = async (text: string) => {
     if (!text.trim()) return;
 
-    if (plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS && user) {
+    // Not logged in: Trigger paywall if limit is reached
+    if (!user) {
+      if (allHistoricalBricks.length >= TRIAL_MAX_BRICKS) {
+        toast({
+          title: "Save Your Progress!",
+          description: "Sign in to save your bricks and lay more.",
+        });
+        setAppState('paywall');
+        return;
+      }
+      // Add to local state for anonymous user
+      const newLocalBrick: Brick = {
+        id: `local-${Date.now()}`,
+        text: text.toUpperCase(),
+        isCompleted: false,
+        date: todayString,
+        userId: 'anonymous',
+        createdAt: new Date().toISOString(),
+      };
+      setAllHistoricalBricks(prev => [...prev, newLocalBrick]);
+      setNewBrickText("");
+      return;
+    }
+
+    // Logged in:
+    if (!db) return; // Should not happen if user is logged in
+
+    if (plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS) {
+      setAppState('paywall'); // Show upgrade options
       toast({
         variant: "destructive",
         title: "Trial Limit Reached",
@@ -147,13 +209,6 @@ export default function Home() {
       return;
     }
 
-    if (!user || !db) {
-      // This should ideally not happen for logged-in users, but as a fallback
-      toast({ variant: "destructive", title: "Not Logged In", description: "You must be logged in to save bricks." });
-      loadMockData(); // Go back to mock data if something is wrong
-      return;
-    }
-
     const newBrick: Omit<Brick, 'id'> = {
       text: text.toUpperCase(),
       isCompleted: false,
@@ -168,7 +223,19 @@ export default function Home() {
   };
   
   const burnBrick = async (id: string) => {
-    if (!user || !db) return;
+    if (!user || !db) { // No burning for anon users
+      const brickToBurn = allHistoricalBricks.find(b => b.id === id);
+      if (brickToBurn) {
+        setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
+        playSound('thud');
+        toast({
+          title: "Brick Moved to Burn Pile",
+          description: `"${brickToBurn.text}" is no longer a priority for today.`,
+        });
+      }
+      return;
+    }
+
     const brickToBurn = allHistoricalBricks.find(b => b.id === id);
     if (brickToBurn) {
       playSound('thud');
@@ -181,7 +248,11 @@ export default function Home() {
   };
 
   const completeBrick = async (id: string) => {
-    if (!user || !db) return;
+    if (!user || !db) { // Local completion for anon users
+       setAllHistoricalBricks(prev => prev.map(b => b.id === id ? {...b, isCompleted: true} : b));
+       playSound('thud');
+       return;
+    }
     const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
     await setDoc(brickRef, { isCompleted: true }, { merge: true });
     playSound('thud');
@@ -218,16 +289,17 @@ export default function Home() {
     return !isToday && !b.isCompleted;
   });
 
+  const isAtBrickLimit = 
+      (!user && allHistoricalBricks.length >= TRIAL_MAX_BRICKS) ||
+      (plan === 'trial' && user && allHistoricalBricks.length >= TRIAL_MAX_BRICKS) ||
+      (plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks);
 
-  const isTrialAndFull = plan === 'trial' && user && allHistoricalBricks.length >= TRIAL_MAX_BRICKS;
-  const isBuilderAndFull = plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks;
 
   const renderContent = () => {
     if (userLoading) {
       return <div className="text-center font-code text-muted-foreground">LOADING SYSTEM...</div>
     }
-    // If not logged in, or logged in but no plan selected yet
-    if (appState === 'paywall' || !plan) {
+    if (appState === 'paywall') {
        return <Paywall onPlanSelect={(p) => handlePlanSelect(p, true)} user={user} />;
     }
     if (appState === 'audit') {
@@ -243,7 +315,7 @@ export default function Home() {
               addBrick={addBrick} 
               text={newBrickText}
               setText={setNewBrickText}
-              disabled={!!(isTrialAndFull || isBuilderAndFull)} 
+              disabled={!!isAtBrickLimit} 
             />
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
@@ -254,7 +326,7 @@ export default function Home() {
                 completeBrick={completeBrick} 
                 burnBrick={burnBrick}
                 reorderBricks={reorderBricks}
-                maxBricks={(plan === 'trial' || plan === 'builder') && maxBricks ? maxBricks : (plan === 'architect' ? 99 : 0)}
+                maxBricks={maxBricks}
                 onPlaceholderClick={handlePlaceholderClick}
               />
             </div>
@@ -288,3 +360,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
