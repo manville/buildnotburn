@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -39,6 +40,9 @@ const createCheckoutUrlFlow = ai.defineFlow(
         }
 
         const { variantId, email, name, userId, plan } = input;
+        
+        const isFreeTier = plan === 'trial';
+        const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/checkout/success`;
 
         const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
             method: 'POST',
@@ -59,6 +63,7 @@ const createCheckoutUrlFlow = ai.defineFlow(
                                 plan: plan,
                             },
                         },
+                        ...(isFreeTier && { redirect_url: redirectUrl })
                     },
                     relationships: {
                         store: {
