@@ -101,7 +101,9 @@ export default function Home() {
 
   const allBricksForWall = [...completedBricks, ...bricks.filter(b => b.isCompleted)];
   
-  const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0;
+  const allDailyBricksCompleted = maxBricks !== null && 
+                                  bricks.length === 0 &&
+                                  completedBricks.filter(b => b.date === new Date().toISOString().split('T')[0]).length >= maxBricks;
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
