@@ -1,27 +1,45 @@
 import type { FC } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Check, Archive } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 interface BrickItemProps {
   brick: Brick;
   removeBrick: (id: number) => void;
+  readOnly?: boolean;
 }
 
-export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick }) => {
+export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = false }) => {
   return (
-    <li className="group bg-card border border-border rounded-lg p-4 flex justify-between items-center transition-colors hover:bg-secondary/50">
-      <span className="font-code uppercase">{brick.text}</span>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => removeBrick(brick.id)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
-        aria-label={`Complete task: ${brick.text}`}
-      >
-        <Check className="h-4 w-4 mr-1" />
-        Complete
-      </Button>
+    <li className={cn(
+      "group bg-card border border-border rounded-lg p-4 flex justify-between items-center transition-all",
+      readOnly ? "border-dashed border-secondary/50 bg-card/50" : "hover:bg-secondary/50",
+      brick.isCompleted && "bg-green-900/30 border-green-700/50"
+      )}>
+      <span className={cn(
+        "font-code uppercase",
+        readOnly && "text-muted-foreground/60",
+        brick.isCompleted && "line-through text-muted-foreground"
+        )}>
+        {brick.text}
+      </span>
+      {!readOnly && !brick.isCompleted && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => removeBrick(brick.id)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
+          aria-label={`Complete task: ${brick.text}`}
+        >
+          <Check className="h-4 w-4 mr-1" />
+          Complete
+        </Button>
+      )}
+       {brick.isCompleted && (
+        <Check className="h-5 w-5 text-green-500" />
+      )}
     </li>
   );
 };
