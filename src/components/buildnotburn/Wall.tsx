@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
 import { subDays, format, parseISO } from 'date-fns';
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Tooltip,
   TooltipContent,
@@ -47,44 +48,47 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
           </div>
         </div>
       </div>
-      <TooltipProvider delayDuration={0}>
-        <div className="bg-card border border-border rounded-lg p-4 h-48 flex justify-between items-end gap-1">
-          {wallData.map(({ date, completedBricks, totalCompleted }) => (
-            <Tooltip key={date}>
-              <TooltipTrigger asChild>
-                <div
-                  className="flex-1 h-full flex flex-col-reverse justify-start gap-1"
-                >
-                  {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "w-full flex-1 rounded-[2px] transition-colors",
-                        i < totalCompleted
-                          ? "bg-primary/70 group-hover:bg-primary"
-                          : "bg-secondary/30 group-hover:bg-secondary/50",
-                        (totalCompleted > 0 || i > 0) && "border border-background/20"
-                      )}
-                    />
-                  ))}
-                </div>
-              </TooltipTrigger>
-              {completedBricks.length > 0 && (
-                <TooltipContent>
-                  <p className="font-bold text-primary font-code">{format(parseISO(date), 'PPP')}</p>
-                  <ul className="mt-2 space-y-1">
-                    {completedBricks.map(brick => (
-                      <li key={brick.id} className="font-code text-xs">
-                        <span className="text-primary mr-2">&gt;</span> {brick.text}
-                      </li>
+      <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border bg-card">
+        <TooltipProvider delayDuration={0}>
+          <div className="flex w-max space-x-1.5 p-4 h-48 items-end">
+            {wallData.map(({ date, completedBricks, totalCompleted }) => (
+              <Tooltip key={date}>
+                <TooltipTrigger asChild>
+                  <div
+                    className="w-4 h-full flex flex-col-reverse justify-start gap-1 cursor-pointer"
+                  >
+                    {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "w-full flex-1 rounded-[2px] transition-colors",
+                          i < totalCompleted
+                            ? "bg-primary/70 group-hover:bg-primary"
+                            : "bg-secondary/30 group-hover:bg-secondary/50",
+                          (totalCompleted > 0 || i > 0) && "border border-background/20"
+                        )}
+                      />
                     ))}
-                  </ul>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          ))}
-        </div>
-      </TooltipProvider>
+                  </div>
+                </TooltipTrigger>
+                {completedBricks.length > 0 && (
+                  <TooltipContent>
+                    <p className="font-bold text-primary font-code">{format(parseISO(date), 'PPP')}</p>
+                    <ul className="mt-2 space-y-1">
+                      {completedBricks.map(brick => (
+                        <li key={brick.id} className="font-code text-xs">
+                          <span className="text-primary mr-2">&gt;</span> {brick.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </section>
   );
 };
