@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,9 +7,10 @@ import { BrickForm } from "@/components/buildnotburn/BrickForm";
 import { BrickList } from "@/components/buildnotburn/BrickList";
 import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
 import { Wall } from "@/components/buildnotburn/Wall";
-import type { Brick, AuditAnswers } from "@/types";
+import type { Brick } from "@/types";
 import { generateInitialBricks } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
+import { playSound } from "@/lib/play-sound";
 
 const { completed, incomplete } = generateInitialBricks();
 
@@ -56,7 +58,8 @@ export default function Home() {
 
     setBricks(newBricks);
     if (completedBrick) {
-      setCompletedBricks(prev => [...prev, completedBrick]);
+      playSound('thud');
+      setCompletedBricks(prev => [...prev, completedBrick!]);
     }
   };
 

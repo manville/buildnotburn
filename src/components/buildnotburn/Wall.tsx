@@ -1,4 +1,6 @@
-import type { FC } from 'react';
+
+import type { FC, HTMLAttributes } from 'react';
+import React from 'react';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
 import { subDays, format, parseISO } from 'date-fns';
@@ -9,7 +11,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
 
 interface WallProps {
   bricks: Brick[];
@@ -24,8 +25,35 @@ type DayData = {
   totalCompleted: number;
 };
 
-export const Wall: FC<WallProps> = ({ bricks }) => {
+const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean}> = ({ isFilled, ...props }) => {
+  const [isAnimating, setIsAnimating] = React.useState(false);
 
+  React.useEffect(() => {
+    if (isFilled) {
+      // Trigger animation
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 500); // Animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isFilled]);
+
+  return (
+    <div
+      {...props}
+      className={cn(
+        "w-full flex-1 rounded-[2px] transition-colors",
+        isFilled
+          ? "bg-primary/70 group-hover:bg-primary"
+          : "bg-secondary/30 group-hover:bg-secondary/50",
+        isFilled && "border border-background/20",
+        isAnimating && 'animate-brick-lay' // Custom animation class
+      )}
+    />
+  );
+};
+
+
+export const Wall: FC<WallProps> = ({ bricks }) => {
   const wallData = Array.from({ length: NUM_DAYS }).map((_, i) => {
     const date = subDays(new Date(), i);
     const dateString = format(date, 'yyyy-MM-dd');
@@ -35,7 +63,7 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
 
   return (
     <section className="mt-16 pb-8">
-       <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end mb-4">
         <h2 className="font-headline text-2xl uppercase">The Wall</h2>
         <div className="flex items-center gap-4 font-code text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -54,24 +82,16 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
             {wallData.map(({ date, completedBricks, totalCompleted }) => (
               <Tooltip key={date}>
                 <TooltipTrigger asChild>
-                  <div
-                    className="w-4 h-full flex flex-col-reverse justify-start gap-1 cursor-pointer"
-                  >
+                  <div className="group w-4 h-full flex flex-col-reverse justify-start gap-1 cursor-pointer">
                     {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => (
-                      <div
+                       <BrickSquare
                         key={i}
-                        className={cn(
-                          "w-full flex-1 rounded-[2px] transition-colors",
-                          i < totalCompleted
-                            ? "bg-primary/70 group-hover:bg-primary"
-                            : "bg-secondary/30 group-hover:bg-secondary/50",
-                          (totalCompleted > 0 || i > 0) && "border border-background/20"
-                        )}
+                        isFilled={i < totalCompleted}
                       />
                     ))}
                   </div>
                 </TooltipTrigger>
-                {completedBricks.length > 0 && (
+                {completedBricks.length > 0 ? (
                   <TooltipContent>
                     <p className="font-bold text-primary font-code">{format(parseISO(date), 'PPP')}</p>
                     <ul className="mt-2 space-y-1">
@@ -82,7 +102,13 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
                       ))}
                     </ul>
                   </TooltipContent>
-                )}
+                ) : (
+                  <TooltipContent>
+                     <p className="font-code text-muted-foreground">{format(parseISO(date), 'PPP')}</p>
+                     <p className="font-code text-xs text-muted-foreground/70 mt-1">// NO BRICKS LAID</p>
+                  </TooltipContent>
+                )
+                }
               </Tooltip>
             ))}
           </div>
