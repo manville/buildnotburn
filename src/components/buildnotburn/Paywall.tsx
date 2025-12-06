@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type FC } from 'react';
@@ -146,7 +147,6 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       alt={communityImage.description}
                       width={600}
                       height={400}
-                      data-ai-hint={communityImage.imageHint}
                       className="object-cover aspect-[3/2]"
                   />
                 </div>
@@ -194,7 +194,6 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       alt={builderImage.description}
                       width={600}
                       height={400}
-                      data-ai-hint={builderImage.imageHint}
                       className="object-cover aspect-[3/2]"
                   />
                 </div>
@@ -247,7 +246,6 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       alt={architectImage.description}
                       width={600}
                       height={400}
-                      data-ai-hint={architectImage.imageHint}
                       className="object-cover aspect-[3/2]"
                   />
                 </div>

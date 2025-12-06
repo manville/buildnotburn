@@ -2,21 +2,18 @@
   "placeholderImages": [
     {
       "id": "paywall-community",
-      "description": "A single glowing orange cube representing the foundational community tier.",
-      "imageUrl": "https://images.unsplash.com/photo-1631722654327-9b7547c8ee72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnbG93aW5nJTIwY3ViZXxlbnwwfHx8fDE3NjQ5Mzg5NTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "glowing cube"
+      "description": "An image representing the free community tier.",
+      "imageUrl": "/community.png"
     },
     {
       "id": "paywall-builder",
-      "description": "An abstract construction of building blocks, representing the builder tier.",
-      "imageUrl": "https://images.unsplash.com/photo-1596962390809-2c147eeb9aff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YnVpbGRpbmclMjBibG9ja3N8ZW58MHx8fHwxNzY1MDMzMTgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "building blocks"
+      "description": "An image representing the Builder plan.",
+      "imageUrl": "/builder.png"
     },
     {
       "id": "paywall-architect",
-      "description": "An abstract architectural grid, representing the architect tier.",
-      "imageUrl": "https://images.unsplash.com/photo-1762088373324-f261768b4577?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhcmNoaXRlY3R1cmFsJTIwZ3JpZHxlbnwwfHx8fDE3NjUwMzQxMjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "architectural grid"
+      "description": "An image representing the Architect plan.",
+      "imageUrl": "/architect.png"
     }
   ]
 }
