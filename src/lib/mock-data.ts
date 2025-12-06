@@ -22,18 +22,24 @@ export const generateMockWallBricks = (): Brick[] => {
     for (let i = 0; i < 90; i++) {
         const date = subDays(today, i);
         const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+        let bricksToLay = 0;
 
-        // Skip most weekends
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-            if (Math.random() > 0.1) continue;
+        if (dayOfWeek === 0 || dayOfWeek === 6) { // Weekend
+            if (Math.random() > 0.4) { // 60% chance of working on a weekend day
+                bricksToLay = Math.random() > 0.7 ? 2 : 1; // Usually 1 brick, sometimes 2
+            }
+        } else { // Weekday
+             if (i < 14) { // More bricks for the last 2 weeks
+                bricksToLay = Math.floor(Math.random() * 2) + 2; // Lay 2 or 3 bricks
+            } else {
+                bricksToLay = Math.floor(Math.random() * 3) + 1; // Lay 1, 2, or 3 bricks
+            }
         }
 
-        // Lay 1 to 3 bricks
-        const bricksToLay = Math.floor(Math.random() * 3) + 1;
         for (let j = 0; j < bricksToLay; j++) {
             mockBricks.push({
                 id: `mock-${i}-${j}`,
-                text: mockTexts[(i + j) % mockTexts.length],
+                text: mockTexts[(i * 3 + j) % mockTexts.length],
                 isCompleted: true,
                 date: format(date, 'yyyy-MM-dd'),
                 userId: 'mock-user',
