@@ -25,18 +25,7 @@ type DayData = {
   totalCompleted: number;
 };
 
-const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean}> = ({ isFilled, ...props }) => {
-  const [isAnimating, setIsAnimating] = React.useState(false);
-
-  React.useEffect(() => {
-    if (isFilled) {
-      // Trigger animation
-      setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 500); // Animation duration
-      return () => clearTimeout(timer);
-    }
-  }, [isFilled]);
-
+const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRecent: boolean}> = ({ isFilled, isRecent, ...props }) => {
   return (
     <div
       {...props}
@@ -46,7 +35,7 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean}> = ({
           ? "bg-primary/70 group-hover:bg-primary"
           : "bg-secondary/30 group-hover:bg-secondary/50",
         isFilled && "border border-background/20",
-        isAnimating && 'animate-brick-lay' // Custom animation class
+        isRecent && 'animate-brick-lay'
       )}
     />
   );
@@ -54,6 +43,21 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean}> = ({
 
 
 export const Wall: FC<WallProps> = ({ bricks }) => {
+  const [recentlyCompleted, setRecentlyCompleted] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    const completedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
+    const newCompleted = completedIds.filter(id => !recentlyCompleted.includes(id));
+
+    if (newCompleted.length > 0) {
+      setRecentlyCompleted(prev => [...prev, ...newCompleted]);
+      const timer = setTimeout(() => {
+        setRecentlyCompleted([]);
+      }, 500); // Animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [bricks]);
+
   const wallData = Array.from({ length: NUM_DAYS }).map((_, i) => {
     const date = subDays(new Date(), i);
     const dateString = format(date, 'yyyy-MM-dd');
@@ -83,12 +87,18 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
               <Tooltip key={date}>
                 <TooltipTrigger asChild>
                   <div className="group w-4 h-full flex flex-col-reverse justify-start gap-1 cursor-pointer">
-                    {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => (
-                       <BrickSquare
-                        key={i}
-                        isFilled={i < totalCompleted}
-                      />
-                    ))}
+                    {Array.from({ length: MAX_BRICKS_PER_DAY }).map((_, i) => {
+                       const brick = completedBricks[i];
+                       const isFilled = i < totalCompleted;
+                       const isRecent = brick ? recentlyCompleted.includes(brick.id) : false;
+                       return (
+                         <BrickSquare
+                          key={i}
+                          isFilled={isFilled}
+                          isRecent={isRecent}
+                        />
+                       )
+                    })}
                   </div>
                 </TooltipTrigger>
                 {completedBricks.length > 0 ? (
