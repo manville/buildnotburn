@@ -21,27 +21,38 @@ export const generateInitialBricks = (): { completed: Brick[], incomplete: Brick
   const allBricks: Brick[] = [];
   let idCounter = 0;
 
-  for (let i = 0; i < 90; i++) {
+  // Generate completed bricks for the last 90 days
+  for (let i = 1; i < 90; i++) { // Start from yesterday
     const date = subDays(new Date(), i);
     const dateString = format(date, 'yyyy-MM-dd');
     const shouldHaveBricks = Math.random() > 0.3; // 70% chance of having bricks on a given day
 
     if (shouldHaveBricks) {
-      const numBricks = Math.floor(Math.random() * 4) + 1; // 1 to 4 bricks
+      const numBricks = Math.floor(Math.random() * 3) + 1; // 1 to 3 bricks
       for (let j = 0; j < numBricks; j++) {
-        const isCompleted = Math.random() > 0.2; // 80% chance of being completed
         allBricks.push({
           id: idCounter++,
           text: getRandomElement(brickTexts),
           date: dateString,
-          isCompleted: isCompleted,
+          isCompleted: true,
         });
       }
     }
   }
 
+  // Generate a few incomplete bricks from the last week
+  const incomplete: Brick[] = [];
+  for (let i = 0; i < 3; i++) {
+    const date = subDays(new Date(), Math.floor(Math.random() * 7) + 1);
+    incomplete.push({
+        id: idCounter++,
+        text: getRandomElement(brickTexts),
+        date: format(date, 'yyyy-MM-dd'),
+        isCompleted: false,
+    });
+  }
+  
   const completed = allBricks.filter(b => b.isCompleted);
-  const incomplete = allBricks.filter(b => !b.isCompleted);
 
   return { completed, incomplete };
 };

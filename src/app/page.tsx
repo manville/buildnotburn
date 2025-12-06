@@ -8,10 +8,7 @@ import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
 import { Wall } from "@/components/buildnotburn/Wall";
 import type { Brick, AuditAnswers } from "@/types";
 import { generateInitialBricks } from "@/lib/mock-data";
-
-const MAX_BRICKS_HIGH = 3;
-const MAX_BRICKS_MEDIUM = 2;
-const MAX_BRICKS_LOW = 1;
+import { useToast } from "@/hooks/use-toast";
 
 const { completed, incomplete } = generateInitialBricks();
 
@@ -20,17 +17,10 @@ export default function Home() {
   const [burnPile, setBurnPile] = useState<Brick[]>([]);
   const [completedBricks, setCompletedBricks] = useState<Brick[]>(completed);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
+  const { toast } = useToast();
 
-  const handleAuditSubmit = (answers: AuditAnswers) => {
-    const { sleep, meetings, dread } = answers;
-    const score = sleep + meetings + dread;
-    if (score <= 3) {
-      setMaxBricks(MAX_BRICKS_HIGH);
-    } else if (score <= 6) {
-      setMaxBricks(MAX_BRICKS_MEDIUM);
-    } else {
-      setMaxBricks(MAX_BRICKS_LOW);
-    }
+  const handleAuditSubmit = (maxBricksValue: number) => {
+    setMaxBricks(maxBricksValue);
   };
 
   const addBrick = (text: string) => {
@@ -46,6 +36,11 @@ export default function Home() {
       setBricks(prevBricks => [...prevBricks, newBrick]);
     } else {
       setBurnPile(prevBurnPile => [...prevBurnPile, newBrick]);
+      toast({
+        title: "Brick Sent to Burn Pile",
+        description: `You've reached your energy limit for today. Stay focused!`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -53,7 +48,7 @@ export default function Home() {
     let completedBrick: Brick | undefined;
     const newBricks = bricks.filter(brick => {
       if (brick.id === id) {
-        completedBrick = { ...brick, isCompleted: true };
+        completedBrick = { ...brick, isCompleted: true, date: new Date().toISOString().split('T')[0] };
         return false;
       }
       return true;
