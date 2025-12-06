@@ -67,7 +67,7 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
     const dateString = format(date, 'yyyy-MM-dd');
     const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
     return { date: dateString, completedBricks, totalCompleted: completedBricks.length };
-  }).reverse();
+  });
 
   return (
     <section className="mt-16 pb-8">
