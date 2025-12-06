@@ -63,7 +63,7 @@ const createCheckoutUrlFlow = ai.defineFlow(
                                 plan: plan,
                             },
                         },
-                        ...(isFreeTier && { redirect_url: redirectUrl })
+                        redirect_url: redirectUrl,
                     },
                     relationships: {
                         store: {
