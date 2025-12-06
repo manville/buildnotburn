@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { BookOpen, LogOut } from 'lucide-react';
+import { BookOpen, LogOut, LayoutDashboard } from 'lucide-react';
 import { GuideModal } from './GuideModal';
 import type { User } from 'firebase/auth';
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
@@ -80,6 +81,13 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                                     </p>
                                 </div>
                                 </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                   <Link href="/review">
+                                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                                    <span>Review</span>
+                                   </Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={onLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
