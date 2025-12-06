@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/buildnotburn/Header";
 import { BrickForm } from "@/components/buildnotburn/BrickForm";
 import { BrickList } from "@/components/buildnotburn/BrickList";
@@ -15,7 +15,7 @@ import { getInitialBricks, getTodayString } from "@/lib/mock-data";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, getDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 type AppState = 'paywall' | 'audit' | 'building';
@@ -33,32 +33,52 @@ export default function Home() {
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
-  
-  useEffect(() => {
-    if (userLoading) return; // Wait until user status is determined
 
+  const loadMockData = useCallback(() => {
+    const { allBricks } = getInitialBricks();
+    setAllHistoricalBricks(allBricks);
+    setPlan(null);
+    setAppState('paywall');
+  }, []);
+
+  useEffect(() => {
+    if (userLoading) {
+      return; 
+    }
     if (!user) {
-      // Not logged in, use local mock data
-      const { allBricks } = getInitialBricks();
-      setAllHistoricalBricks(allBricks);
-      setAppState('paywall');
-    } else {
-      // User is logged in, fetch from Firestore
-      if (!db) return;
-      const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
-      const unsubscribe = onSnapshot(bricksQuery, (snapshot) => {
-        const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
-        setAllHistoricalBricks(bricksFromDb);
-      });
-      // TODO: Fetch user's plan from their profile
-      // For now, let's just let them select a plan.
-      if (!plan) {
+      loadMockData();
+      return;
+    }
+    if (!db) {
+      return;
+    }
+
+    // Fetch user's plan and data from Firestore
+    const userRef = doc(db, `users/${user.uid}`);
+    const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
+
+    const unsubscribe = onSnapshot(bricksQuery, (snapshot) => {
+      const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
+      setAllHistoricalBricks(bricksFromDb);
+    });
+
+    getDoc(userRef).then(userDoc => {
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userPlan = userData.plan || null;
+        if (userPlan) {
+          handlePlanSelect(userPlan, false); // Don't write back to DB
+        } else {
+          setAppState('paywall');
+        }
+      } else {
         setAppState('paywall');
       }
+    });
 
-      return () => unsubscribe();
-    }
-  }, [user, userLoading, db, plan]);
+    return () => unsubscribe();
+  }, [user, userLoading, db, loadMockData]);
+
 
   const handleLogin = async () => {
     if (!auth) return;
@@ -66,15 +86,19 @@ export default function Home() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      // Create user doc if it doesn't exist
       if (db) {
         const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, {
-            id: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-        }, { merge: true });
+        // Set user doc on first login, but don't overwrite plan if it exists
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+            await setDoc(userRef, {
+                id: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                plan: 'trial' // Default to trial on first login
+            }, { merge: true });
+        }
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -89,17 +113,14 @@ export default function Home() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      setPlan(null); // Reset plan on logout
-      setAppState('paywall');
+      // State will reset via useEffect
     }
   };
 
-
-  const handlePlanSelect = async (selectedPlan: Plan) => {
+  const handlePlanSelect = async (selectedPlan: Plan, writeToDb = true) => {
     setPlan(selectedPlan);
 
-    // If user is logged in, save their plan selection
-    if (user && db) {
+    if (user && db && writeToDb) {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, { plan: selectedPlan }, { merge: true });
     }
@@ -108,6 +129,8 @@ export default function Home() {
       setMaxBricks(TRIAL_MAX_BRICKS);
       setAppState('building');
     } else if (selectedPlan === 'builder') {
+      // For existing builders, we might want to skip the audit
+      // For now, we'll show it every time they select the plan
       setAppState('audit');
     } else if (selectedPlan === 'architect') {
       setMaxBricks(Infinity); 
@@ -127,7 +150,7 @@ export default function Home() {
   const addBrick = async (text: string) => {
     if (!text.trim()) return;
 
-    if (plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS) {
+    if (plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS && user) {
       toast({
         variant: "destructive",
         title: "Trial Limit Reached",
@@ -145,54 +168,43 @@ export default function Home() {
       return;
     }
 
+    if (!user || !db) {
+      // This should ideally not happen for logged-in users, but as a fallback
+      toast({ variant: "destructive", title: "Not Logged In", description: "You must be logged in to save bricks." });
+      loadMockData(); // Go back to mock data if something is wrong
+      return;
+    }
+
     const newBrick: Omit<Brick, 'id'> = {
       text: text.toUpperCase(),
       isCompleted: false,
       date: todayString,
-      userId: user?.uid || 'local',
-      createdAt: serverTimestamp() as any,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
     };
     
-    if (user && db) {
-        const bricksCol = collection(db, `users/${user.uid}/bricks`);
-        await addDoc(bricksCol, newBrick);
-    } else {
-        setAllHistoricalBricks(prevBricks => [...prevBricks, { ...newBrick, id: Date.now().toString(), createdAt: new Date().toISOString() }]);
-    }
+    const bricksCol = collection(db, `users/${user.uid}/bricks`);
+    await addDoc(bricksCol, newBrick);
     setNewBrickText("");
   };
   
   const burnBrick = async (id: string) => {
+    if (!user || !db) return;
     const brickToBurn = allHistoricalBricks.find(b => b.id === id);
     if (brickToBurn) {
-        playSound('thud');
-        if (user && db) {
-            await deleteDoc(doc(db, `users/${user.uid}/bricks/${id}`));
-        } else {
-            setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
-        }
-        toast({
-            title: "Brick Moved to Burn Pile",
-            description: `"${brickToBurn.text}" is no longer a priority for today.`,
-        });
+      playSound('thud');
+      await deleteDoc(doc(db, `users/${user.uid}/bricks/${id}`));
+      toast({
+        title: "Brick Moved to Burn Pile",
+        description: `"${brickToBurn.text}" is no longer a priority for today.`,
+      });
     }
   };
 
   const completeBrick = async (id: string) => {
-    if (user && db) {
-        const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
-        await setDoc(brickRef, { isCompleted: true }, { merge: true });
-    } else {
-        setAllHistoricalBricks(prevBricks =>
-          prevBricks.map(brick => {
-            if (brick.id === id) {
-              playSound('thud');
-              return { ...brick, isCompleted: true };
-            }
-            return brick;
-          })
-        );
-    }
+    if (!user || !db) return;
+    const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
+    await setDoc(brickRef, { isCompleted: true }, { merge: true });
     playSound('thud');
   };
   
@@ -228,53 +240,54 @@ export default function Home() {
   });
 
 
-  const isTrialAndFull = plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS;
+  const isTrialAndFull = plan === 'trial' && user && allHistoricalBricks.length >= TRIAL_MAX_BRICKS;
   const isBuilderAndFull = plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks;
 
   const renderContent = () => {
     if (userLoading) {
       return <div className="text-center font-code text-muted-foreground">LOADING SYSTEM...</div>
     }
-    switch (appState) {
-      case 'paywall':
-        return <Paywall onPlanSelect={handlePlanSelect} onLogin={handleLogin} user={user} />;
-      case 'audit':
-        return <EnergyAudit onSubmit={handleAuditSubmit} />;
-      case 'building':
-        return (
-          <>
-            {allDailyBricksCompleted ? (
-              <Firebreak onLayMore={handleLayMore} />
-            ) : (
-              <BrickForm 
-                addBrick={addBrick} 
-                text={newBrickText}
-                setText={setNewBrickText}
-                disabled={isTrialAndFull || isBuilderAndFull} 
-              />
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-              <div>
-                <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
-                <BrickList 
-                  bricks={todaysIncompleteBricks} 
-                  completeBrick={completeBrick} 
-                  burnBrick={burnBrick}
-                  reorderBricks={reorderBricks}
-                  maxBricks={(plan === 'trial' || plan === 'builder') && maxBricks ? maxBricks : (plan === 'architect' ? 99 : 0)}
-                  onPlaceholderClick={handlePlaceholderClick}
-                />
-              </div>
-              <div>
-                <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">THE BURN PILE</h2>
-                <BrickList bricks={burnPile} variant="burn" />
-              </div>
-            </div>
-          </>
-        );
-      default:
-        return null;
+    // If not logged in, or logged in but no plan selected yet
+    if (appState === 'paywall' || !plan) {
+       return <Paywall onPlanSelect={(p) => handlePlanSelect(p, true)} onLogin={handleLogin} user={user} />;
     }
+    if (appState === 'audit') {
+      return <EnergyAudit onSubmit={handleAuditSubmit} />;
+    }
+    if (appState === 'building') {
+      return (
+        <>
+          {allDailyBricksCompleted ? (
+            <Firebreak onLayMore={handleLayMore} />
+          ) : (
+            <BrickForm 
+              addBrick={addBrick} 
+              text={newBrickText}
+              setText={setNewBrickText}
+              disabled={!!(isTrialAndFull || isBuilderAndFull)} 
+            />
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+            <div>
+              <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
+              <BrickList 
+                bricks={todaysIncompleteBricks} 
+                completeBrick={completeBrick} 
+                burnBrick={burnBrick}
+                reorderBricks={reorderBricks}
+                maxBricks={(plan === 'trial' || plan === 'builder') && maxBricks ? maxBricks : (plan === 'architect' ? 99 : 0)}
+                onPlaceholderClick={handlePlaceholderClick}
+              />
+            </div>
+            <div>
+              <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">THE BURN PILE</h2>
+              <BrickList bricks={burnPile} variant="burn" />
+            </div>
+          </div>
+        </>
+      );
+    }
+    return null;
   };
 
   return (
@@ -296,3 +309,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
