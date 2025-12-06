@@ -15,8 +15,11 @@ import { Separator } from '../ui/separator';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '../ui/label';
 
 type Plan = 'trial' | 'builder' | 'architect';
+type BillingCycle = 'monthly' | 'annually';
 
 interface PaywallProps {
   onPlanSelect: (plan: Plan, writeToDb: boolean) => void;
@@ -47,348 +50,308 @@ const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community')
 const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
 const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
 
-
-export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
-  const [email, setEmail] = useState('');
+export const Paywall: FC<PaywallProps> = ({ user }) => {
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('annually');
   const [isLoading, setIsLoading] = useState<boolean | string>(false);
-  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
+
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle} | null>(null);
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
 
   const handleBillingToggle = () => {
     setBillingCycle(prev => (prev === 'monthly' ? 'annually' : 'monthly'));
   };
 
-  const handleEmailLogin = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!email) {
-        toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email address.' });
-        return;
-    }
-    setIsLoading('email');
-    try {
-        await sendSignInLink(email);
-        window.localStorage.setItem('emailForSignIn', email);
-        setEmailSent(true);
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Error Sending Link',
-            description: error.message || 'Could not send sign-in link. Please try again.',
-        });
-    } finally {
-        setIsLoading(false);
-    }
-  }
-
-  const handleGoogleLogin = async () => {
-      setIsLoading('google');
-      try {
-        const userCredential = await signInWithGoogle();
-        if (userCredential.user) {
-            await getOrCreateUser(userCredential.user);
-        }
-      } catch (error: any) {
-          if (error.code === 'auth/popup-closed-by-user') {
-            toast({
-                variant: "default",
-                title: 'Sign-in Cancelled',
-                description: 'You can sign in with Google at any time.',
-            });
-          } else if (error.code === 'auth/configuration-not-found') {
-            toast({
-                variant: 'destructive',
-                title: 'Configuration Error',
-                description: 'Google Sign-In is not enabled for this project. Please see the setup guide.',
-            });
-          } else {
-            toast({
-                variant: 'destructive',
-                title: 'Google Sign-In Failed',
-                description: error.message || 'Could not sign in with Google. Please try again.',
-            });
-          }
-      } finally {
-          setIsLoading(false);
-      }
-  }
-
-  const handlePaidPlanSelect = async (plan: 'builder' | 'architect') => {
-    if (!user) {
-        toast({
-            title: "Please Sign In First",
-            description: "You need to be signed in to purchase a plan.",
-            variant: "default"
-        });
-        document.getElementById('email-input')?.focus();
-        return;
-    }
-
-    setIsLoading(plan); // Set loading state to the specific plan being processed
-    
-    try {
-        const selectedPlan = plans[plan][billingCycle];
-
-        if (!selectedPlan.variantId || selectedPlan.variantId.startsWith('REPLACE')) {
-             toast({
-                variant: "destructive",
-                title: "Configuration Error",
-                description: "The product variant IDs are not configured. Please add them to your .env file.",
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        const checkoutResponse = await createLemonSqueezyCheckout({
-            variantId: selectedPlan.variantId,
-            email: user.email!,
-            name: user.displayName || user.email!,
-            userId: user.uid,
-            plan: plan,
-        });
-
-        if (checkoutResponse.checkoutUrl) {
-            // Redirect to Lemon Squeezy checkout
-            window.location.href = checkoutResponse.checkoutUrl;
-        } else {
-            throw new Error('Could not create a checkout session.');
-        }
-    } catch (error: any) {
-        console.error("Checkout failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Checkout Error",
-            description: error.message || "There was a problem redirecting you to checkout. Please try again.",
-        });
-        setIsLoading(false);
+  const handlePaidPlanSelect = (plan: 'builder' | 'architect') => {
+    if (user) {
+      // If user is already logged in, proceed to checkout directly
+      processCheckout(plan, billingCycle, user.uid, user.email!, user.displayName || '');
+    } else {
+      // If user is not logged in, open the signup modal
+      setSelectedPlan({ plan, cycle: billingCycle });
+      setShowSignupModal(true);
     }
   };
 
+  const handleSignupAndCheckout = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlan || !signupEmail || !signupName) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please enter your name and email to continue.",
+      });
+      return;
+    }
+    
+    // Create a temporary, unique user ID for the checkout process.
+    // The webhook will later create a real Firebase user with this info.
+    const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    
+    processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, signupEmail, signupName);
+  }
+
+  const processCheckout = async (plan: 'builder' | 'architect', cycle: BillingCycle, userId: string, email: string, name: string) => {
+    setIsLoading(`${plan}-${cycle}`);
+    
+    try {
+      const planDetails = plans[plan][cycle];
+      
+      if (!planDetails.variantId || planDetails.variantId.startsWith('REPLACE')) {
+        toast({
+          variant: "destructive",
+          title: "Configuration Error",
+          description: "The product variant IDs are not configured. Please add them to your .env file.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const checkoutResponse = await createLemonSqueezyCheckout({
+        variantId: planDetails.variantId,
+        email: email,
+        name: name,
+        userId: userId, // This can be a temp ID or a real one
+        plan: plan,
+      });
+
+      if (checkoutResponse.checkoutUrl) {
+        window.location.href = checkoutResponse.checkoutUrl;
+      } else {
+        throw new Error('Could not create a checkout session.');
+      }
+    } catch (error: any) {
+      console.error("Checkout failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Checkout Error",
+        description: error.message || "There was a problem redirecting you to checkout. Please try again.",
+      });
+      setIsLoading(false);
+    }
+  }
 
   return (
-    <div className="max-w-6xl mx-auto my-8">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl sm:text-5xl uppercase tracking-wider">Choose Your System</h1>
-        <p className="font-code text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Start for free by subscribing to the newsletter, or purchase a plan to get the complete system.
-        </p>
+    <>
+      <div className="max-w-6xl mx-auto my-8">
+        <div className="text-center mb-12">
+          <h1 className="font-headline text-4xl sm:text-5xl uppercase tracking-wider">Choose Your System</h1>
+          <p className="font-code text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Start for free by subscribing to the newsletter, or purchase a plan to get the complete system.
+          </p>
+        </div>
+
+        <div className="flex justify-center items-center gap-4 mb-10">
+          <span className={cn('font-medium', billingCycle === 'monthly' && 'text-primary')}>Monthly</span>
+          <Switch
+            checked={billingCycle === 'annually'}
+            onCheckedChange={handleBillingToggle}
+            aria-label="Toggle between monthly and annual billing"
+          />
+          <span className={cn('font-medium', billingCycle === 'annually' && 'text-primary')}>
+            Annually <span className="text-xs text-green-500 font-bold">(Save ~17%)</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Free Newsletter */}
+          <Card className="border-border/60 overflow-hidden">
+            {communityImage && (
+                <div className="bg-card/50">
+                  <Image 
+                      src={communityImage.imageUrl} 
+                      alt={communityImage.description}
+                      width={600}
+                      height={400}
+                      data-ai-hint={communityImage.imageHint}
+                      className="object-cover aspect-[3/2]"
+                  />
+                </div>
+            )}
+            <CardHeader className="pb-4">
+              <CardTitle className="font-headline text-2xl uppercase">The Community</CardTitle>
+              <CardDescription className="font-code text-sm">Insights on sustainable creativity.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">$0</span>
+                <span className="text-muted-foreground">/ forever</span>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground min-h-[140px]">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Weekly insights & tips</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Join the community</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Use the app with a 3-brick limit</span>
+                </li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full" disabled>
+                Available via Newsletter Signup
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Builder Plan */}
+          <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold uppercase px-3 py-1 rounded-full">
+              Recommended
+            </div>
+            {builderImage && (
+                <div className="bg-card/50">
+                  <Image 
+                      src={builderImage.imageUrl} 
+                      alt={builderImage.description}
+                      width={600}
+                      height={400}
+                      data-ai-hint={builderImage.imageHint}
+                      className="object-cover aspect-[3/2]"
+                  />
+                </div>
+            )}
+            <CardHeader className="pb-4">
+              <CardTitle className="font-headline text-2xl uppercase">Builder</CardTitle>
+              <CardDescription className="font-code text-sm">The sustainable daily practice.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.builder.monthly.price : Math.round(plans.builder.annually.price / 12)}</span>
+                <span className="text-muted-foreground">/ month</span>
+              </div>
+              <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
+                <li className="flex items-center gap-2">
+                  <BookCheck className="h-4 w-4 text-primary" />
+                  <span className="font-medium">The Field Guide (Digital)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <BookCheck className="h-4 w-4 text-primary" />
+                  <span className="font-medium">The Daily Worksheet (Printable)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="font-medium">The BuildNotBurn Web App</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Daily brick limit via Energy Audit</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Review Dashboard Analytics</span>
+                </li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={!!isLoading}>
+                  {isLoading === `builder-${billingCycle}` ? 'Processing...' : 'Get the System'}
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Architect Plan */}
+          <Card className="border-border/60 overflow-hidden">
+            {architectImage && (
+                <div className="bg-card/50">
+                  <Image 
+                      src={architectImage.imageUrl} 
+                      alt={architectImage.description}
+                      width={600}
+                      height={400}
+                      data-ai-hint={architectImage.imageHint}
+                      className="object-cover aspect-[3/2]"
+                  />
+                </div>
+            )}
+            <CardHeader className="pb-4">
+              <CardTitle className="font-headline text-2xl uppercase">Architect</CardTitle>
+              <CardDescription className="font-code text-sm">For the prolific creator.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.architect.monthly.price : Math.round(plans.architect.annually.price / 12)}</span>
+                <span className="text-muted-foreground">/ month</span>
+              </div>
+              <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Everything in Builder, plus:</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Unlimited daily bricks</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Advanced Analytics</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>Priority support</span>
+                </li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={!!isLoading}>
+                  {isLoading === `architect-${billingCycle}` ? 'Processing...' : 'Become an Architect'}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
 
-      <div className="flex justify-center items-center gap-4 mb-10">
-        <span className={cn('font-medium', billingCycle === 'monthly' && 'text-primary')}>Monthly</span>
-        <Switch
-          checked={billingCycle === 'annually'}
-          onCheckedChange={handleBillingToggle}
-          aria-label="Toggle between monthly and annual billing"
-        />
-        <span className={cn('font-medium', billingCycle === 'annually' && 'text-primary')}>
-          Annually <span className="text-xs text-green-500 font-bold">(Save ~17%)</span>
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Free Newsletter */}
-        <Card className="border-border/60 overflow-hidden">
-          {communityImage && (
-              <div className="bg-card/50">
-                <Image 
-                    src={communityImage.imageUrl} 
-                    alt={communityImage.description}
-                    width={600}
-                    height={400}
-                    data-ai-hint={communityImage.imageHint}
-                    className="object-cover aspect-[3/2]"
+      <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl uppercase">One Final Step</DialogTitle>
+            <DialogDescription>
+              Enter your name and email to proceed to checkout. Your account will be created after payment.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSignupAndCheckout}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={signupName}
+                  onChange={(e) => setSignupName(e.target.value)}
+                  className="col-span-3"
+                  required
                 />
               </div>
-          )}
-          <CardHeader className="pb-4">
-            <CardTitle className="font-headline text-2xl uppercase">The Community</CardTitle>
-            <CardDescription className="font-code text-sm">Insights on sustainable creativity.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-muted-foreground">/ forever</span>
-            </div>
-            <ul className="space-y-2 text-sm text-muted-foreground min-h-[140px]">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Weekly insights & tips</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Join the community</span>
-              </li>
-               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Use the app with a 3-brick limit</span>
-              </li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-             <Button variant="outline" className="w-full" disabled>
-              Available via Newsletter Signup
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* Builder Plan */}
-        <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold uppercase px-3 py-1 rounded-full">
-            Recommended
-          </div>
-          {builderImage && (
-              <div className="bg-card/50">
-                <Image 
-                    src={builderImage.imageUrl} 
-                    alt={builderImage.description}
-                    width={600}
-                    height={400}
-                    data-ai-hint={builderImage.imageHint}
-                    className="object-cover aspect-[3/2]"
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  className="col-span-3"
+                  required
                 />
               </div>
-          )}
-          <CardHeader className="pb-4">
-            <CardTitle className="font-headline text-2xl uppercase">Builder</CardTitle>
-            <CardDescription className="font-code text-sm">The sustainable daily practice.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.builder.monthly.price : Math.round(plans.builder.annually.price / 12)}</span>
-              <span className="text-muted-foreground">/ month</span>
             </div>
-            <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
-               <li className="flex items-center gap-2">
-                <BookCheck className="h-4 w-4 text-primary" />
-                <span className="font-medium">The Field Guide (Digital)</span>
-              </li>
-               <li className="flex items-center gap-2">
-                <BookCheck className="h-4 w-4 text-primary" />
-                <span className="font-medium">The Daily Worksheet (Printable)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span className="font-medium">The BuildNotBurn Web App</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Daily brick limit via Energy Audit</span>
-              </li>
-               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Review Dashboard Analytics</span>
-              </li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={!!isLoading}>
-                {isLoading === 'builder' ? 'Processing...' : user ? 'Get the System' : 'Sign in to Purchase'}
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* Architect Plan */}
-        <Card className="border-border/60 overflow-hidden">
-          {architectImage && (
-              <div className="bg-card/50">
-                <Image 
-                    src={architectImage.imageUrl} 
-                    alt={architectImage.description}
-                    width={600}
-                    height={400}
-                    data-ai-hint={architectImage.imageHint}
-                    className="object-cover aspect-[3/2]"
-                />
-              </div>
-          )}
-          <CardHeader className="pb-4">
-            <CardTitle className="font-headline text-2xl uppercase">Architect</CardTitle>
-            <CardDescription className="font-code text-sm">For the prolific creator.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-baseline gap-2">
-               <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.architect.monthly.price : Math.round(plans.architect.annually.price / 12)}</span>
-              <span className="text-muted-foreground">/ month</span>
-            </div>
-             <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
-               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span className="font-medium">Everything in Builder, plus:</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Unlimited daily bricks</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Advanced Analytics</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Priority support</span>
-              </li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-             <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={!!isLoading}>
-                {isLoading === 'architect' ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Purchase'}
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-
-        {!user && (
-            <Card className="max-w-lg mx-auto mt-12 border-primary/50">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl uppercase text-center">Choose an Option to Continue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {emailSent ? (
-                        <div className='text-center'>
-                            <Mail className="h-8 w-8 mx-auto text-primary"/>
-                            <p className="font-bold mt-2">Check your email</p>
-                            <p className="text-sm text-muted-foreground mt-1">A sign-in link has been sent to <strong>{email}</strong>.</p>
-                            <p className="text-xs text-muted-foreground/80 mt-4">Close this tab and click the link in the email to sign in.</p>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-4">
-                            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading === 'google'} className="h-12 text-base border-2">
-                                {isLoading === 'google' ? 'Signing in...' : (
-                                    <>
-                                        <GoogleIcon className="h-6 w-6 mr-2" />
-                                        Sign in with Google
-                                    </>
-                                )}
-                            </Button>
-
-                            <div className="relative">
-                                <Separator />
-                                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OR</span>
-                            </div>
-
-                            <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
-                                <Input
-                                    id="email-input"
-                                    type="email"
-                                    placeholder="Enter your email address"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    disabled={isLoading === 'email'}
-                                    required
-                                    className="h-12 text-base"
-                                />
-                                <Button type="submit" className="h-12 font-bold text-base" disabled={isLoading === 'email'}>
-                                    {isLoading === 'email' ? 'Sending...' : 'Send Sign-in Link'}
-                                </Button>
-                            </form>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        )}
-    </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full font-bold" disabled={!!isLoading}>
+                {isLoading ? 'Processing...' : 'Proceed to Checkout'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
-
-    
