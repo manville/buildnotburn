@@ -47,6 +47,18 @@ export default function Home() {
     
     setBricks(prevBricks => [...prevBricks, newBrick]);
   };
+  
+  const burnBrick = (id: number) => {
+    const brickToBurn = bricks.find(b => b.id === id);
+    if (brickToBurn) {
+      setBricks(bricks.filter(b => b.id !== id));
+      setBurnPile(prev => [...prev, { ...brickToBurn, isCompleted: false }]);
+      toast({
+        title: "Brick Moved",
+        description: `"${brickToBurn.text}" moved to the burn pile.`,
+      });
+    }
+  };
 
   const removeBrick = (id: number) => {
     let completedBrick: Brick | undefined;
@@ -63,6 +75,18 @@ export default function Home() {
       playSound('thud');
       setCompletedBricks(prev => [...prev, completedBrick!]);
     }
+  };
+  
+  const reorderBricks = (fromId: number, toId: number) => {
+    const fromIndex = bricks.findIndex(b => b.id === fromId);
+    const toIndex = bricks.findIndex(b => b.id === toId);
+
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const newBricks = [...bricks];
+    const [movedBrick] = newBricks.splice(fromIndex, 1);
+    newBricks.splice(toIndex, 0, movedBrick);
+    setBricks(newBricks);
   };
 
   const handleLayMore = () => {
@@ -91,7 +115,12 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
                 <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
-                <BrickList bricks={bricks} removeBrick={removeBrick} />
+                <BrickList 
+                  bricks={bricks} 
+                  removeBrick={removeBrick} 
+                  burnBrick={burnBrick}
+                  reorderBricks={reorderBricks}
+                />
               </div>
               <div>
                 <h2 className="font-headline text-2xl text-muted-foreground/50 mb-2">THE BURN PILE</h2>

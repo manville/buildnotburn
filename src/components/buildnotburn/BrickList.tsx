@@ -1,4 +1,7 @@
-import type { FC } from 'react';
+
+"use client";
+import type { FC, DragEvent } from 'react';
+import React, { useState, useRef } from 'react';
 import { BrickItem } from './BrickItem';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
@@ -6,11 +9,31 @@ import { cn } from '@/lib/utils';
 interface BrickListProps {
   bricks: Brick[];
   removeBrick: (id: number) => void;
+  burnBrick?: (id: number) => void;
+  reorderBricks?: (fromId: number, toId: number) => void;
   variant?: 'build' | 'burn';
 }
 
-export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, variant = 'build' }) => {
+export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build' }) => {
   const isBurnPile = variant === 'burn';
+  const dragItemId = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleDragStart = (e: DragEvent<HTMLLIElement>, id: number) => {
+    dragItemId.current = id;
+    setDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnter = (e: DragEvent<HTMLLIElement>, id: number) => {
+    if (!reorderBricks || dragItemId.current === null || dragItemId.current === id) return;
+    reorderBricks(dragItemId.current, id);
+  };
+  
+  const handleDragEnd = (e: DragEvent<HTMLLIElement>) => {
+    dragItemId.current = null;
+    setDragging(false);
+  };
 
   if (bricks.length === 0) {
     return (
@@ -24,9 +47,22 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, variant = '
   }
 
   return (
-    <ul id="brick-list" className="space-y-2">
+    <ul 
+      onDragOver={(e) => !isBurnPile && e.preventDefault()}
+      className="space-y-2"
+    >
       {bricks.map((brick) => (
-        <BrickItem key={brick.id} brick={brick} removeBrick={removeBrick} readOnly={isBurnPile} />
+        <BrickItem 
+          key={brick.id} 
+          brick={brick} 
+          removeBrick={removeBrick} 
+          burnBrick={burnBrick}
+          readOnly={isBurnPile}
+          onDragStart={!isBurnPile ? handleDragStart : undefined}
+          onDragEnter={!isBurnPile ? handleDragEnter : undefined}
+          onDragEnd={!isBurnPile ? handleDragEnd : undefined}
+          isDragging={dragging && dragItemId.current === brick.id}
+        />
       ))}
     </ul>
   );

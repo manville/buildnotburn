@@ -1,16 +1,21 @@
 
-import type { FC } from 'react';
+import type { FC, DragEvent } from 'react';
 import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Flame } from 'lucide-react';
+import { Check, Flame, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
 interface BrickItemProps {
   brick: Brick;
   removeBrick: (id: number) => void;
+  burnBrick?: (id: number) => void;
   readOnly?: boolean;
+  onDragStart?: (e: DragEvent<HTMLLIElement>, id: number) => void;
+  onDragEnter?: (e: DragEvent<HTMLLIElement>, id: number) => void;
+  onDragEnd?: (e: DragEvent<HTMLLIElement>) => void;
+  isDragging?: boolean;
 }
 
 const BrickIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -26,65 +31,98 @@ const BrickIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <rect width="18" height="18" x="3" y="3" rx="2" />
-    <path d="M12 9v6" />
-    <path d="M3 9h18" />
-    <path d="M3 15h18" />
-    <path d="M9 3v18" />
-    <path d="M15 3v18" />
+    <path d="M18 9V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v4" />
+    <path d="M18 9h-5a1 1 0 0 1-1-1V5" />
+    <path d="M6 9H3a1 1 0 0 0-1 1v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a1 1 0 0 0-1-1h-3" />
+    <path d="M10 14h4" />
+    <path d="M8 18h8" />
   </svg>
 );
 
 
-export const BrickItem: FC<BrickItemProps> = ({ brick, removeBrick, readOnly = false }) => {
+export const BrickItem: FC<BrickItemProps> = ({ 
+  brick, 
+  removeBrick, 
+  burnBrick,
+  readOnly = false,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+  isDragging
+}) => {
   const [isCompleting, setIsCompleting] = useState(false);
 
   const handleComplete = () => {
     if (readOnly) return;
     setIsCompleting(true);
-    // Wait for animation to finish before removing
     setTimeout(() => {
       removeBrick(brick.id);
-    }, 700); // Corresponds to animation duration
+    }, 700);
   };
+  
+  const handleBurn = () => {
+    if (burnBrick) {
+      burnBrick(brick.id);
+    }
+  }
 
   const isBuilding = !readOnly && !brick.isCompleted;
 
   return (
-    <li className={cn(
-      "group bg-card border border-border rounded-lg p-4 flex justify-between items-center transition-all",
-      readOnly ? "border-dashed border-amber-900/60 bg-card/50" : "hover:bg-secondary/50",
-      brick.isCompleted && "bg-green-900/30 border-green-700/50",
-      isCompleting && "animate-brick-fall"
-      )}>
-      
+    <li 
+      draggable={isBuilding}
+      onDragStart={(e) => onDragStart?.(e, brick.id)}
+      onDragEnter={(e) => onDragEnter?.(e, brick.id)}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "group bg-card border border-border rounded-lg p-3 flex justify-between items-center transition-all",
+        readOnly ? "border-dashed border-amber-900/60 bg-card/50" : "hover:bg-secondary/50",
+        brick.isCompleted && "bg-green-900/30 border-green-700/50",
+        isCompleting && "animate-brick-fall",
+        isDragging && "opacity-50",
+        isBuilding && "cursor-grab"
+      )}
+    >
       <div className="flex items-center gap-3">
+        {isBuilding && <GripVertical className="h-5 w-5 text-muted-foreground/50 transition-opacity group-hover:opacity-0" />}
         {readOnly && <Flame className="h-4 w-4 text-amber-600/70" />}
-        {isBuilding && <BrickIcon className="h-4 w-4 text-primary/70" />}
+        {!readOnly && !isCompleting && <BrickIcon className="h-4 w-4 text-primary/70" />}
         <span className={cn(
           "font-code uppercase",
           readOnly && "text-muted-foreground/60 line-through",
           brick.isCompleted && "line-through text-muted-foreground"
-          )}>
+        )}>
           {brick.text}
         </span>
       </div>
 
-      {!readOnly && !brick.isCompleted && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleComplete}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
-          aria-label={`Complete task: ${brick.text}`}
-        >
-          <Check className="h-4 w-4 mr-1" />
-          Complete
-        </Button>
-      )}
-       {brick.isCompleted && (
-        <Check className="h-5 w-5 text-green-500" />
-      )}
+      <div className="flex items-center gap-1">
+        {isBuilding && (
+          <>
+             <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBurn}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 font-bold uppercase text-xs"
+                aria-label={`Burn task: ${brick.text}`}
+              >
+                <Flame className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleComplete}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
+                aria-label={`Complete task: ${brick.text}`}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+          </>
+        )}
+        {brick.isCompleted && (
+          <Check className="h-5 w-5 text-green-500" />
+        )}
+      </div>
     </li>
   );
 };
