@@ -58,7 +58,7 @@ export const Header: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-center mt-4 space-y-2">
                     <p className="font-code text-muted-foreground text-sm sm:text-base">
-                        A Lucee/CFML & HTMX Demo, Reimagined in Next.js.
+                        The Sustainable System for Long-Term Creators.
                     </p>
                     <Button variant="link" onClick={() => setIsGuideOpen(true)} className="text-primary/80 hover:text-primary">
                         <BookOpen className="mr-2 h-4 w-4"/>
