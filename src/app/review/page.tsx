@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import type { Brick } from '@/types';
 import { AnalyticsDashboard } from '@/components/buildnotburn/AnalyticsDashboard';
 import { calculateAnalytics, type AnalyticsData } from '@/lib/analytics';
@@ -67,19 +67,20 @@ export default function ReviewPage() {
 
         if (!user) {
             return (
-                <div className="text-center">
-                    <h2 className="font-headline text-2xl text-primary">Access Denied</h2>
-                    <p className="text-muted-foreground mt-2">You must be logged in to view your review.</p>
-                    <Button asChild className="mt-4">
-                        <Link href="/">Return Home</Link>
-                    </Button>
-                </div>
+                 <Paywall 
+                    variantIds={{
+                        newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
+                        builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
+                        builderAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID!,
+                        architectMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID!,
+                        architectAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID!,
+                    }}
+                />
             );
         }
         
         if (plan === 'trial') {
             return <Paywall 
-                user={user}
                 variantIds={{
                     newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
                     builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
@@ -108,5 +109,3 @@ export default function ReviewPage() {
         </main>
     );
 }
-
-    

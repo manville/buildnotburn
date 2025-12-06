@@ -50,62 +50,63 @@ export default function Home() {
       setAppState('loading');
       return;
     }
-
+  
     if (!user) {
       setAppState('paywall');
       return;
     }
-    
-    // User is logged in, listen to their data.
+  
+    // User is logged in, set up listeners.
     if (db) {
-        const userRef = doc(db, `users/${user.uid}`);
-        const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
-            if (userDoc.exists()) {
-                const userPlan: Plan = userDoc.data().plan || 'trial';
-                setPlan(userPlan);
-                
-                const hasSeenGuide = localStorage.getItem('hasSeenGuide');
-                const isPaid = userPlan === 'builder' || userPlan === 'architect';
-                if (!hasSeenGuide && isPaid) {
-                  setIsGuideOpen(true);
-                }
-
-                if (userPlan === 'builder') {
-                    setAppState('audit');
-                    setMaxBricks(null); 
-                } else if (userPlan === 'architect') {
-                    setAppState('building');
-                    setMaxBricks(Infinity); 
-                } else { // Trial plan
-                    setAppState('building');
-                    setMaxBricks(TRIAL_MAX_BRICKS);
-                }
-            } else {
-                // This might happen briefly on first login, before user doc is created.
-                // We default to a loading-like state or a sensible default.
-                setPlan('trial');
-                setAppState('building');
-                setMaxBricks(TRIAL_MAX_BRICKS);
-            }
-        }, (error) => {
-            console.error("Error fetching user data:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
-            setAppState('paywall'); // Fallback to paywall on error
-        });
-
-        const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
-        const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
-            const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
-            setAllHistoricalBricks(bricksFromDb);
-        }, (error) => {
-            console.error("Error fetching bricks:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
-        });
-
-        return () => {
-            unsubscribeUser();
-            unsubscribeBricks();
-        };
+      const userRef = doc(db, `users/${user.uid}`);
+      const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
+        if (userDoc.exists()) {
+          const userPlan: Plan = userDoc.data().plan || 'trial';
+          setPlan(userPlan);
+  
+          // Check if guide should be shown for new paid users
+          const hasSeenGuide = localStorage.getItem('hasSeenGuide');
+          const isPaid = userPlan === 'builder' || userPlan === 'architect';
+          if (!hasSeenGuide && isPaid) {
+            setIsGuideOpen(true);
+          }
+  
+          // Set app state based on plan
+          if (userPlan === 'builder') {
+            setAppState('audit');
+            setMaxBricks(null);
+          } else if (userPlan === 'architect') {
+            setAppState('building');
+            setMaxBricks(Infinity);
+          } else { // Trial plan
+            setAppState('building');
+            setMaxBricks(TRIAL_MAX_BRICKS);
+          }
+        } else {
+          // Fallback for a user who exists in auth but not in Firestore yet
+          setPlan('trial');
+          setAppState('building');
+          setMaxBricks(TRIAL_MAX_BRICKS);
+        }
+      }, (error) => {
+        console.error("Error fetching user data:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load your user profile." });
+        setAppState('paywall'); // Fallback to paywall on error
+      });
+  
+      const bricksQuery = query(collection(db, `users/${user.uid}/bricks`));
+      const unsubscribeBricks = onSnapshot(bricksQuery, (snapshot) => {
+        const bricksFromDb = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Brick));
+        setAllHistoricalBricks(bricksFromDb);
+      }, (error) => {
+        console.error("Error fetching bricks:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load your bricks." });
+      });
+  
+      return () => {
+        unsubscribeUser();
+        unsubscribeBricks();
+      };
     }
   }, [user, userLoading, db, toast]);
 
@@ -234,7 +235,6 @@ export default function Home() {
     }
     if (appState === 'paywall') {
        return <Paywall 
-         user={user}
          variantIds={{
             newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
             builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
@@ -338,5 +338,3 @@ export default function Home() {
     </main>
   );
 }
-
-    

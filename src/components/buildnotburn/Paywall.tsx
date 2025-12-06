@@ -6,12 +6,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Switch } from '@/components/ui/switch';
 import { Check, BookCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { User } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { SignInModal } from './SignInModal';
 
 type Plan = 'trial' | 'builder' | 'architect';
@@ -26,7 +24,6 @@ export interface VariantIds {
 }
 
 interface PaywallProps {
-  user: User | null;
   variantIds: VariantIds;
 }
 
@@ -34,11 +31,11 @@ const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community')
 const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
 const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
 
-export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
+export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annually');
   const [isLoading, setIsLoading] = useState<boolean | string>(false);
   const { toast } = useToast();
-
+  
   const [selectedPlan, setSelectedPlan] = useState<{plan: Plan, cycle: BillingCycle | 'free'} | null>(null);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
@@ -62,39 +59,16 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
   };
 
   const handlePlanSelect = (plan: Plan, cycle: BillingCycle | 'free') => {
-    if (user) {
-      processCheckout(plan, cycle, user.uid, user.email!, user.displayName || '');
-    } else {
       setSelectedPlan({ plan, cycle });
       setIsSignupModalOpen(true); 
-    }
   };
 
-  const handleGoogleSignupAndCheckout = async () => {
-    if (!selectedPlan) return;
-    setIsLoading('google');
-    try {
-        const credential = await signInWithGoogle();
-        const loggedInUser = credential.user;
-        await getOrCreateUser(loggedInUser);
-        await processCheckout(selectedPlan.plan, selectedPlan.cycle, loggedInUser.uid, loggedInUser.email!, loggedInUser.displayName || '');
-    } catch(error: any) {
-        console.error("Google Sign-In failed", error);
-        toast({
-            variant: "destructive",
-            title: "Sign-Up Error",
-            description: "Could not sign up with Google. Please try again or use the email option."
-        })
-    } finally {
-        setIsLoading(false);
-    }
-  }
 
-  const handleEmailSignupAndCheckout = async (name: string, email: string) => {
+  const handleSignupAndCheckout = async (name: string, email: string) => {
     if (!selectedPlan) return;
-    // For email signups, we can't get a real UID until they click the link.
+    
     // We create a temporary ID to associate the checkout, and our webhook
-    // will need to be smart enough to handle this (e.g. by creating a new user if ID is temp)
+    // will need to be smart enough to handle this by creating a new user.
     const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     await processCheckout(selectedPlan.plan, selectedPlan.cycle, tempUserId, email, name);
   };
@@ -109,9 +83,10 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
         toast({
           variant: "destructive",
           title: "Configuration Error",
-          description: "The product variant IDs are not configured. Please add them to your .env file.",
+          description: "The product variant IDs are not configured correctly in the application.",
         });
         setIsLoading(false);
+        setIsSignupModalOpen(false);
         return;
       }
       
@@ -317,12 +292,9 @@ export const Paywall: FC<PaywallProps> = ({ user, variantIds }) => {
       <SignInModal 
         isOpen={isSignupModalOpen} 
         onClose={() => setIsSignupModalOpen(false)}
-        onGoogleSignIn={handleGoogleSignupAndCheckout}
-        onEmailSubmit={handleEmailSignupAndCheckout}
+        onEmailSubmit={handleSignupAndCheckout}
         variant="signup"
       />
     </>
   );
 };
-
-    
