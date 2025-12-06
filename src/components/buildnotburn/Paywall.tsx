@@ -25,12 +25,12 @@ interface PaywallProps {
 
 const plans = {
   builder: {
-    monthly: { price: 5, priceId: 'price_1PgQAmRrI1JzT5bY9N5wS3bE' },
-    annually: { price: 50, priceId: 'price_1PgQAmRrI1JzT5bYiJ5jF4S5' },
+    monthly: { price: 5, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
+    annually: { price: 50, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
   },
   architect: {
-    monthly: { price: 10, priceId: 'price_1PgQBGRrI1JzT5bYqBZCj13b' },
-    annually: { price: 100, priceId: 'price_1PgQBGRrI1JzT5bYhB8o7d9q' },
+    monthly: { price: 10, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
+    annually: { price: 100, priceId: 'price_REPLACE_WITH_YOUR_TEST_ID' },
   },
 };
 
@@ -347,5 +347,3 @@ export const Paywall: FC<PaywallProps> = (props) => {
         </Elements>
     )
 }
-
-    
