@@ -1,3 +1,4 @@
+
 import { subDays, format } from 'date-fns';
 import type { Brick } from '@/types';
 
@@ -35,8 +36,8 @@ export const generateInitialBricks = (): { completed: Brick[], incomplete: Brick
   // Use a fixed date to avoid server-client mismatch
   const staticToday = new Date('2024-07-01T12:00:00.000Z');
 
-  // Generate completed bricks for the last 90 days
-  for (let i = 1; i < 90; i++) { // Start from yesterday
+  // Generate completed bricks for the last 10 days
+  for (let i = 1; i < 10; i++) { // Start from yesterday
     const date = subDays(staticToday, i);
     const dateString = format(date, 'yyyy-MM-dd');
     const shouldHaveBricks = seededRandom() > 0.3; // 70% chance of having bricks on a given day

@@ -16,7 +16,7 @@ interface WallProps {
   bricks: Brick[];
 }
 
-const NUM_DAYS = 90;
+const NUM_DAYS = 10;
 const MAX_BRICKS_PER_DAY = 3;
 
 type DayData = {
@@ -43,16 +43,19 @@ const BrickSquare: FC<HTMLAttributes<HTMLDivElement> & {isFilled: boolean; isRec
 
 
 export const Wall: FC<WallProps> = ({ bricks }) => {
-  const [completedIds, setCompletedIds] = React.useState<number[]>([]);
   const [recentlyCompleted, setRecentlyCompleted] = React.useState<number[]>([]);
   const [today, setToday] = React.useState(new Date());
+  const prevBricksRef = React.useRef<Brick[]>(bricks);
 
   React.useEffect(() => {
-    // This effect runs only on the client, preventing the hydration mismatch.
+    // This effect runs only on the client, preventing hydration mismatch.
     setToday(new Date());
+  }, []);
 
-    const newCompletedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
-    const newBricks = newCompletedIds.filter(id => !completedIds.includes(id));
+  React.useEffect(() => {
+    const prevCompletedIds = prevBricksRef.current.filter(b => b.isCompleted).map(b => b.id);
+    const currentCompletedIds = bricks.filter(b => b.isCompleted).map(b => b.id);
+    const newBricks = currentCompletedIds.filter(id => !prevCompletedIds.includes(id));
 
     if (newBricks.length > 0) {
       setRecentlyCompleted(newBricks);
@@ -60,19 +63,23 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
         setRecentlyCompleted([]);
       }, 700); // Animation duration, should match CSS
       
-      setCompletedIds(newCompletedIds);
-      
       return () => clearTimeout(timer);
     }
-  }, [bricks, completedIds]);
+    
+    // Update the ref after the logic has run
+    prevBricksRef.current = bricks;
+
+  }, [bricks]);
 
   const wallData = React.useMemo(() => {
-    return Array.from({ length: NUM_DAYS }).map((_, i) => {
-      const date = subDays(today, i);
-      const dateString = format(date, 'yyyy-MM-dd');
-      const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
-      return { date: dateString, completedBricks, totalCompleted: completedBricks.length };
-    });
+    const data: DayData[] = [];
+    for (let i = 0; i < NUM_DAYS; i++) {
+        const date = subDays(today, i);
+        const dateString = format(date, 'yyyy-MM-dd');
+        const completedBricks = bricks.filter(b => b.date === dateString && b.isCompleted);
+        data.push({ date: dateString, completedBricks, totalCompleted: completedBricks.length });
+    }
+    return data;
   }, [bricks, today]);
 
   return (
