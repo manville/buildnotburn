@@ -2,11 +2,8 @@ import type { Brick } from '@/types';
 import bricksData from '@/data/bricks.json';
 import { format } from 'date-fns';
 
-// A consistent, static "today" for mock data purposes.
-const staticToday = new Date('2024-07-01T12:00:00Z');
-
 export const getTodayString = (): string => {
-  return format(staticToday, 'yyyy-MM-dd');
+  return format(new Date(), 'yyyy-MM-dd');
 };
 
 export const getInitialBricks = (): { allBricks: Brick[] } => {

@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 
 // Initialize Firebase Admin SDK
-if (getApps().length === 0 && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    initializeApp({
+let app: App;
+if (getApps().length === 0) {
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
+    }
+    app = initializeApp({
         credential: cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS))
     });
+} else {
+    app = getApps()[0];
 }
 
-const db = getFirestore();
+
+const db = getFirestore(app);
 
 export async function POST(req: NextRequest) {
     const webhookSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;

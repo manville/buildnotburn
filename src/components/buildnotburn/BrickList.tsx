@@ -63,7 +63,7 @@ export const BrickList: FC<BrickListProps> = ({ bricks, completeBrick, burnBrick
     
     return Array.from({ length: placeholderCount }).map((_, index) => (
       <BrickPlaceholder 
-        key={`placeholder-${index}`}
+        key={`placeholder-${index}-${suggestions[index % suggestions.length]}`}
         text={suggestions[index % suggestions.length]}
         onClick={onPlaceholderClick}
       />
