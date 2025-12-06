@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'BuildNotBurn',
@@ -34,6 +35,7 @@ export default function RootLayout({
                 <Toaster />
             </FirebaseClientProvider>
         </ThemeProvider>
+        <Script async defer src="https://withcabin.com/hello.js" />
       </body>
     </html>
   );
