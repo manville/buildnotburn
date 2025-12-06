@@ -95,7 +95,7 @@ The webhook is how Lemon Squeezy tells your app that a payment was successful.
 4.  **Events**: Check the boxes for `subscription_created` and `subscription_updated`.
 5.  **Signing Secret**: After you create the webhook, Lemon Squeezy will show you a **Signing Secret**. It looks like `whsec_...`. **Copy this value immediately.** It is only shown once.
 6.  Click **Save Webhook**.
-BuildM4nvill3NotBurn
+
 ---
 
 ## 4. Firebase: Get Service Account Credentials
