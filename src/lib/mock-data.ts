@@ -2,22 +2,19 @@ import type { Brick } from '@/types';
 import bricksData from '@/data/bricks.json';
 import { format } from 'date-fns';
 
-export const getInitialBricks = (): { completed: Brick[], incomplete: Brick[] } => {
+// A consistent, static "today" for mock data purposes.
+const staticToday = new Date('2024-07-01T12:00:00Z');
+
+export const getTodayString = (): string => {
+  return format(staticToday, 'yyyy-MM-dd');
+};
+
+export const getInitialBricks = (): { allBricks: Brick[] } => {
   const allBricks: Brick[] = (bricksData as Brick[]).map(b => ({
     ...b,
     id: typeof b.id === 'string' ? parseInt(b.id, 10) : b.id
   }));
-  
-  // Use a fixed date that matches the incomplete tasks in the mock data.
-  // This prevents server/client mismatch and ensures data loads correctly.
-  const staticToday = new Date('2024-07-01T12:00:00Z');
-  const todayString = format(staticToday, 'yyyy-MM-dd');
 
-  // Completed bricks are all bricks from the JSON marked as completed.
-  const completed = allBricks.filter(b => b.isCompleted);
-  
-  // Incomplete bricks are only those for "today" (our static date) that are not completed.
-  const incomplete = allBricks.filter(b => !b.isCompleted && b.date === todayString);
-
-  return { completed, incomplete };
+  // Return all bricks, the filtering will be done in the component now.
+  return { allBricks };
 };

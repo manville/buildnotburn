@@ -11,31 +11,32 @@ import type { Brick } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/lib/play-sound";
 import { Firebreak } from "@/components/buildnotburn/Firebreak";
-import { getInitialBricks } from "@/lib/mock-data";
+import { getInitialBricks, getTodayString } from "@/lib/mock-data";
 
 export default function Home() {
-  const [bricks, setBricks] = useState<Brick[]>([]);
-  const [burnPile, setBurnPile] = useState<Brick[]>([]);
-  const [completedBricks, setCompletedBricks] = useState<Brick[]>([]);
+  const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
   const [newBrickText, setNewBrickText] = useState("");
   const { toast } = useToast();
   
   useEffect(() => {
-    const { completed, incomplete } = getInitialBricks();
-    setBricks(incomplete);
-    setCompletedBricks(completed);
+    // Load all bricks into state once on mount.
+    const { allBricks } = getInitialBricks();
+    setAllHistoricalBricks(allBricks);
   }, []);
-
 
   const handleAuditSubmit = (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
   };
 
+  const todayString = getTodayString();
+  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString);
+  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString);
+
   const addBrick = (text: string) => {
     if (!text.trim()) return;
 
-    if (maxBricks !== null && bricks.length >= maxBricks) {
+    if (maxBricks !== null && todaysIncompleteBricks.length >= maxBricks) {
       toast({
         variant: "destructive",
         title: "Capacity Reached: A Moment to Prioritize",
@@ -48,52 +49,51 @@ export default function Home() {
       id: Date.now(),
       text: text.toUpperCase(),
       isCompleted: false,
-      date: new Date().toISOString().split('T')[0],
+      date: todayString,
     };
     
-    setBricks(prevBricks => [...prevBricks, newBrick]);
+    setAllHistoricalBricks(prevBricks => [...prevBricks, newBrick]);
     setNewBrickText("");
   };
   
   const burnBrick = (id: number) => {
-    const brickToBurn = bricks.find(b => b.id === id);
+    // This action doesn't delete the brick, it just moves it to a conceptual "burn pile"
+    // by filtering it out from the main active list. Visually it's handled by BrickList.
+    // To make this permanent, we'd need another state for the burn pile.
+    // For now, we will simulate this by marking it as "burned" and filtering.
+    
+    const brickToBurn = todaysIncompleteBricks.find(b => b.id === id);
     if (brickToBurn) {
-      setBricks(bricks.filter(b => b.id !== id));
-      setBurnPile(prev => [...prev, { ...brickToBurn, isCompleted: false }]);
-      toast({
-        title: "Brick Moved to Burn Pile",
-        description: `"${brickToBurn.text}" is no longer a priority for today.`,
-      });
+        setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
+        toast({
+            title: "Brick Moved to Burn Pile",
+            description: `"${brickToBurn.text}" is no longer a priority for today.`,
+        });
     }
   };
 
-  const removeBrick = (id: number) => {
-    let completedBrick: Brick | undefined;
-    const newBricks = bricks.filter(brick => {
-      if (brick.id === id) {
-        completedBrick = { ...brick, isCompleted: true, date: new Date().toISOString().split('T')[0] };
-        return false;
-      }
-      return true;
-    });
-
-    setBricks(newBricks);
-    if (completedBrick) {
-      playSound('thud');
-      setCompletedBricks(prev => [...prev, completedBrick!]);
-    }
+  const completeBrick = (id: number) => {
+    setAllHistoricalBricks(prevBricks =>
+      prevBricks.map(brick => {
+        if (brick.id === id) {
+          playSound('thud');
+          return { ...brick, isCompleted: true };
+        }
+        return brick;
+      })
+    );
   };
   
   const reorderBricks = (fromId: number, toId: number) => {
-    const fromIndex = bricks.findIndex(b => b.id === fromId);
-    const toIndex = bricks.findIndex(b => b.id === toId);
+    const fromIndex = allHistoricalBricks.findIndex(b => b.id === fromId);
+    const toIndex = allHistoricalBricks.findIndex(b => b.id === toId);
 
     if (fromIndex === -1 || toIndex === -1) return;
 
-    const newBricks = [...bricks];
+    const newBricks = [...allHistoricalBricks];
     const [movedBrick] = newBricks.splice(fromIndex, 1);
     newBricks.splice(toIndex, 0, movedBrick);
-    setBricks(newBricks);
+    setAllHistoricalBricks(newBricks);
   };
 
   const handleLayMore = () => {
@@ -103,12 +103,14 @@ export default function Home() {
   const handlePlaceholderClick = (text: string) => {
     setNewBrickText(text);
   };
-
-  const allBricksForWall = [...completedBricks, ...bricks.filter(b => b.isCompleted)];
   
   const allDailyBricksCompleted = maxBricks !== null && 
-                                  bricks.length === 0 &&
-                                  completedBricks.filter(b => b.date === new Date().toISOString().split('T')[0]).length >= maxBricks;
+                                  todaysIncompleteBricks.length === 0 &&
+                                  todaysCompletedBricks.length >= maxBricks;
+
+  // The burn pile will now show all tasks that are *not* on today's date and are incomplete.
+  // This is a simple way to represent the burn pile without adding more state.
+  const burnPile = allHistoricalBricks.filter(b => b.date !== todayString && !b.isCompleted);
 
   return (
     <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
@@ -125,15 +127,15 @@ export default function Home() {
                 addBrick={addBrick} 
                 text={newBrickText}
                 setText={setNewBrickText}
-                disabled={maxBricks !== null && bricks.length >= maxBricks} 
+                disabled={maxBricks !== null && todaysIncompleteBricks.length >= maxBricks} 
               />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
                 <h2 className="font-headline text-2xl text-primary mb-2">BUILDING</h2>
                 <BrickList 
-                  bricks={bricks} 
-                  removeBrick={removeBrick} 
+                  bricks={todaysIncompleteBricks} 
+                  removeBrick={completeBrick} 
                   burnBrick={burnBrick}
                   reorderBricks={reorderBricks}
                   maxBricks={maxBricks}
@@ -148,7 +150,7 @@ export default function Home() {
           </>
         )}
       </div>
-      <Wall bricks={allBricksForWall} />
+      <Wall bricks={allHistoricalBricks} />
       <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50">
         <p>
           &copy; {new Date().getFullYear()} BuildNotBurn. All Systems Operational.
