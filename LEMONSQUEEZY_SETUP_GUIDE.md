@@ -28,7 +28,7 @@ Now, add the pricing variants:
     *   **Billing Cycle**: `Month`
     *   Click **Publish variant**.
     *   After publishing, click the **three dots (...)** next to the variant and **copy the Variant ID**. You will need this.
-
+1133255
 3.  **Annual Variant**:
     *   Click **Add Variant** again.
     *   **Name**: `Annually`
@@ -36,7 +36,7 @@ Now, add the pricing variants:
     *   **Billing Cycle**: `Year`
     *   Click **Publish variant**.
     *   Copy the **Variant ID** for this annual variant.
-
+1133271
 ---
 
 ### Step 2: Create the "Architect" Subscription Plan
@@ -50,12 +50,13 @@ Repeat the process from Step 1 for the Architect plan.
     *   **Price**: `$15.00`
     *   **Billing Cycle**: `Month`
     *   Publish and copy the **Variant ID**.
+1133255
 4.  **Annual Variant**:
     *   **Name**: `Annually`
     *   **Price**: `$150.00`
     *   **Billing Cycle**: `Year`
     *   Publish and copy the **Variant ID**.
-
+1133271
 ---
 
 ### Step 3: Create the "Newsletter" Free Product
@@ -67,7 +68,7 @@ This product will be used to capture emails for your newsletter.
 3.  **Price**: Set the price to **$0.00**. This is critical.
 4.  Click **Publish Product**.
 5.  On the product page, find the default variant, click the **three dots (...)**, and copy the **Variant ID**.
-
+1133276
 ---
 
 ## 2. Lemon Squeezy: Create the Webhook
@@ -81,7 +82,7 @@ The webhook is how Lemon Squeezy tells your app that a payment was successful.
 4.  **Events**: Check the boxes for `subscription_created` and `subscription_updated`.
 5.  **Signing Secret**: After you create the webhook, Lemon Squeezy will show you a **Signing Secret**. It looks like `whsec_...`. **Copy this value immediately.** It is only shown once.
 6.  Click **Save Webhook**.
-
+BuildM4nvill3NotBurn
 ---
 
 ## 3. Firebase: Get Service Account Credentials

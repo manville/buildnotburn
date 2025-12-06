@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
 import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flow';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -40,6 +42,10 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.622,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
     </svg>
 );
+
+const communityImage = PlaceHolderImages.find(p => p.id === 'paywall-community');
+const builderImage = PlaceHolderImages.find(p => p.id === 'paywall-builder');
+const architectImage = PlaceHolderImages.find(p => p.id === 'paywall-architect');
 
 
 export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
@@ -168,7 +174,19 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Free Newsletter */}
-        <Card className="border-border/60">
+        <Card className="border-border/60 overflow-hidden">
+          {communityImage && (
+              <div className="bg-card/50">
+                <Image 
+                    src={communityImage.imageUrl} 
+                    alt={communityImage.description}
+                    width={600}
+                    height={400}
+                    data-ai-hint={communityImage.imageHint}
+                    className="object-cover aspect-[3/2]"
+                />
+              </div>
+          )}
           <CardHeader className="pb-4">
             <CardTitle className="font-headline text-2xl uppercase">The Community</CardTitle>
             <CardDescription className="font-code text-sm">Insights on sustainable creativity.</CardDescription>
@@ -178,7 +196,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
               <span className="text-4xl font-bold">$0</span>
               <span className="text-muted-foreground">/ forever</span>
             </div>
-            <ul className="space-y-2 text-sm text-muted-foreground h-[180px]">
+            <ul className="space-y-2 text-sm text-muted-foreground min-h-[140px]">
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span>Weekly insights & tips</span>
@@ -201,10 +219,22 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         </Card>
 
         {/* Builder Plan */}
-        <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10">
+        <Card className="border-primary border-2 relative shadow-2xl shadow-primary/10 overflow-hidden">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold uppercase px-3 py-1 rounded-full">
             Recommended
           </div>
+          {builderImage && (
+              <div className="bg-card/50">
+                <Image 
+                    src={builderImage.imageUrl} 
+                    alt={builderImage.description}
+                    width={600}
+                    height={400}
+                    data-ai-hint={builderImage.imageHint}
+                    className="object-cover aspect-[3/2]"
+                />
+              </div>
+          )}
           <CardHeader className="pb-4">
             <CardTitle className="font-headline text-2xl uppercase">Builder</CardTitle>
             <CardDescription className="font-code text-sm">The sustainable daily practice.</CardDescription>
@@ -214,7 +244,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
               <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.builder.monthly.price : Math.round(plans.builder.annually.price / 12)}</span>
               <span className="text-muted-foreground">/ month</span>
             </div>
-            <ul className="space-y-2 text-sm text-foreground h-[180px]">
+            <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
                <li className="flex items-center gap-2">
                 <BookCheck className="h-4 w-4 text-primary" />
                 <span className="font-medium">The Field Guide (Digital)</span>
@@ -245,7 +275,19 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
         </Card>
 
         {/* Architect Plan */}
-        <Card className="border-border/60">
+        <Card className="border-border/60 overflow-hidden">
+          {architectImage && (
+              <div className="bg-card/50">
+                <Image 
+                    src={architectImage.imageUrl} 
+                    alt={architectImage.description}
+                    width={600}
+                    height={400}
+                    data-ai-hint={architectImage.imageHint}
+                    className="object-cover aspect-[3/2]"
+                />
+              </div>
+          )}
           <CardHeader className="pb-4">
             <CardTitle className="font-headline text-2xl uppercase">Architect</CardTitle>
             <CardDescription className="font-code text-sm">For the prolific creator.</CardDescription>
@@ -255,7 +297,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.architect.monthly.price : Math.round(plans.architect.annually.price / 12)}</span>
               <span className="text-muted-foreground">/ month</span>
             </div>
-             <ul className="space-y-2 text-sm text-foreground h-[180px]">
+             <ul className="space-y-2 text-sm text-foreground min-h-[140px]">
                <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span className="font-medium">Everything in Builder, plus:</span>
