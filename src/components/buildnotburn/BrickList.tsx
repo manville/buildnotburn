@@ -58,24 +58,28 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
 
 
   return (
-    <ul 
-      onDragOver={(e) => !isBurnPile && e.preventDefault()}
-      className="space-y-2"
-    >
-      {bricks.map((brick) => (
-        <BrickItem 
-          key={brick.id} 
-          brick={brick} 
-          removeBrick={removeBrick} 
-          burnBrick={burnBrick}
-          readOnly={isBurnPile}
-          onDragStart={!isBurnPile ? handleDragStart : undefined}
-          onDragEnter={!isBurnPile ? handleDragEnter : undefined}
-          onDragEnd={!isBurnPile ? handleDragEnd : undefined}
-          isDragging={dragging && dragItemId.current === brick.id}
-        />
-      ))}
-      {renderPlaceholders()}
-    </ul>
+    <div className={cn(
+      isBurnPile && "max-h-[124px] overflow-y-auto pr-1 space-y-2"
+    )}>
+      <ul 
+        onDragOver={(e) => !isBurnPile && e.preventDefault()}
+        className="space-y-2"
+      >
+        {bricks.map((brick) => (
+          <BrickItem 
+            key={brick.id} 
+            brick={brick} 
+            removeBrick={removeBrick} 
+            burnBrick={burnBrick}
+            readOnly={isBurnPile}
+            onDragStart={!isBurnPile ? handleDragStart : undefined}
+            onDragEnter={!isBurnPile ? handleDragEnter : undefined}
+            onDragEnd={!isBurnPile ? handleDragEnd : undefined}
+            isDragging={dragging && dragItemId.current === brick.id}
+          />
+        ))}
+        {renderPlaceholders()}
+      </ul>
+    </div>
   );
 };

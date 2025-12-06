@@ -140,13 +140,12 @@ export const BrickItem: FC<BrickItemProps> = ({
                 <TooltipTrigger asChild>
                    <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={handleComplete}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10"
                       aria-label={`Complete brick: ${brick.text}`}
                     >
-                      <Check className="h-4 w-4 mr-1" />
-                      Complete
+                      <Check className="h-4 w-4" />
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
