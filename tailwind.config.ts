@@ -102,13 +102,8 @@ export default {
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
         'brick-fall': {
-          '0%': { transform: 'translateX(0) scale(1)', opacity: '1' },
-          '10%': { transform: 'translateX(-4px) rotate(-3deg)' },
-          '20%': { transform: 'translateX(4px) rotate(3deg)' },
-          '30%': { transform: 'translateX(-4px) rotate(-3deg)' },
-          '40%': { transform: 'translateX(4px) rotate(3deg)' },
-          '50%': { transform: 'translateX(0) rotate(0)' },
-          '100%': { transform: 'scale(0)', opacity: '0', height: '0', padding: '0', margin: '0', border: '0'},
+          '0%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+          '100%': { transform: 'translateY(20px) scale(0)', opacity: '0', height: '0', padding: '0', margin: '0', border: '0'},
         }
       },
       animation: {
