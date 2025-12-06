@@ -54,14 +54,13 @@ export const generateInitialBricks = (): { completed: Brick[], incomplete: Brick
     }
   }
 
-  // Generate a few incomplete bricks from the last week
+  // Generate a few incomplete bricks for "today"
   const incomplete: Brick[] = [];
-  for (let i = 0; i < 3; i++) {
-    const date = subDays(staticToday, Math.floor(seededRandom() * 7) + 1);
+  for (let i = 0; i < 2; i++) {
     incomplete.push({
         id: idCounter++,
         text: getRandomElement(brickTexts),
-        date: format(date, 'yyyy-MM-dd'),
+        date: format(staticToday, 'yyyy-MM-dd'),
         isCompleted: false,
     });
   }

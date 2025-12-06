@@ -1,6 +1,9 @@
-import type { FC } from 'react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { BookOpen } from 'lucide-react';
+import { GuideModal } from './GuideModal';
 
-const Logo: FC<{ className?: string }> = ({ className }) => (
+const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 100 100"
@@ -34,25 +37,36 @@ const Logo: FC<{ className?: string }> = ({ className }) => (
 );
 
 
-export const Header: FC = () => {
+export const Header: React.FC = () => {
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
+
     return (
-        <header className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-12 text-center select-none">
-            <div className="flex items-center justify-center gap-4">
-                <Logo className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 text-primary" />
-                <div className="font-headline font-bold uppercase tracking-wider text-5xl sm:text-7xl lg:text-8xl leading-none">
-                    <h1 className="sr-only">Build. Not, Burn.</h1>
-                    <div aria-hidden="true" className="relative">
-                        <div className="flex flex-col items-center">
-                            <span>BUILD.</span>
-                            <span className="mt-1">BURN.</span>
+        <>
+            <header className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-12 text-center select-none">
+                <div className="flex items-center justify-center gap-4">
+                    <Logo className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 text-primary" />
+                    <div className="font-headline font-bold uppercase tracking-wider text-5xl sm:text-7xl lg:text-8xl leading-none">
+                        <h1 className="sr-only">Build. Not, Burn.</h1>
+                        <div aria-hidden="true" className="relative">
+                            <div className="flex flex-col items-center">
+                                <span>BUILD.</span>
+                                <span className="mt-1">BURN.</span>
+                            </div>
+                            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl sm:text-2xl lg:text-3xl text-primary">NOT,</span>
                         </div>
-                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl sm:text-2xl lg:text-3xl text-primary">NOT,</span>
                     </div>
                 </div>
-            </div>
-            <p className="font-code text-muted-foreground mt-4 text-sm sm:text-base">
-                A Lucee/CFML & HTMX Demo, Reimagined in Next.js.
-            </p>
-        </header>
+                <div className="flex flex-col items-center mt-4 space-y-2">
+                    <p className="font-code text-muted-foreground text-sm sm:text-base">
+                        A Lucee/CFML & HTMX Demo, Reimagined in Next.js.
+                    </p>
+                    <Button variant="link" onClick={() => setIsGuideOpen(true)} className="text-primary/80 hover:text-primary">
+                        <BookOpen className="mr-2 h-4 w-4"/>
+                        Read The Guide
+                    </Button>
+                </div>
+            </header>
+            <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+        </>
     );
 };

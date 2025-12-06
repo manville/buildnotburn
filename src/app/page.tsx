@@ -96,7 +96,6 @@ export default function Home() {
 
   const allBricksForWall = [...completedBricks, ...bricks.filter(b => b.isCompleted)];
   
-  // A user can only lay more bricks if they have 0 bricks left in their "building" list.
   const allDailyBricksCompleted = maxBricks !== null && bricks.length === 0;
 
   return (
@@ -110,7 +109,7 @@ export default function Home() {
             {allDailyBricksCompleted ? (
               <Firebreak onLayMore={handleLayMore} />
             ) : (
-              <BrickForm addBrick={addBrick} />
+              <BrickForm addBrick={addBrick} disabled={bricks.length >= maxBricks} />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
@@ -120,6 +119,7 @@ export default function Home() {
                   removeBrick={removeBrick} 
                   burnBrick={burnBrick}
                   reorderBricks={reorderBricks}
+                  maxBricks={maxBricks}
                 />
               </div>
               <div>

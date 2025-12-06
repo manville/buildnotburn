@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { playSound } from '@/lib/play-sound';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 interface BrickItemProps {
@@ -89,10 +90,23 @@ export const BrickItem: FC<BrickItemProps> = ({
         isDragging && "opacity-50",
         isBuilding && "cursor-grab"
       )}
+      aria-label={brick.text}
     >
       <div className="flex items-center gap-3">
-        {readOnly && <Flame className="h-4 w-4 text-amber-600/70" />}
-        {!readOnly && !isCompleting && <BrickIcon className="h-4 w-4 text-primary/70" />}
+        {readOnly ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Flame className="h-4 w-4 text-amber-600/70" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>This brick is in the burn pile.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <BrickIcon className="h-4 w-4 text-primary/70" />
+        )}
         <span className={cn(
           "font-code uppercase",
           readOnly && "text-muted-foreground/60 line-through",
@@ -103,29 +117,45 @@ export const BrickItem: FC<BrickItemProps> = ({
       </div>
 
       <div className="flex items-center gap-1">
-        {isBuilding && (
-          <>
-             <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBurn}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
-                aria-label={`Burn task: ${brick.text}`}
-              >
-                <Flame className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleComplete}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
-                aria-label={`Complete task: ${brick.text}`}
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Complete
-              </Button>
-          </>
-        )}
+        <TooltipProvider>
+          {isBuilding && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleBurn}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                    aria-label={`Move to burn pile: ${brick.text}`}
+                  >
+                    <Flame className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Move to Burn Pile</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                   <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleComplete}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10 font-bold uppercase text-xs"
+                      aria-label={`Complete brick: ${brick.text}`}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Complete
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark as Complete</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
+        </TooltipProvider>
         {brick.isCompleted && (
           <Check className="h-5 w-5 text-green-500" />
         )}

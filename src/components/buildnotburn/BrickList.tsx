@@ -5,6 +5,7 @@ import React, { useState, useRef } from 'react';
 import { BrickItem } from './BrickItem';
 import type { Brick } from '@/types';
 import { cn } from '@/lib/utils';
+import { BrickPlaceholder } from './BrickPlaceholder';
 
 interface BrickListProps {
   bricks: Brick[];
@@ -12,9 +13,10 @@ interface BrickListProps {
   burnBrick?: (id: number) => void;
   reorderBricks?: (fromId: number, toId: number) => void;
   variant?: 'build' | 'burn';
+  maxBricks?: number | null;
 }
 
-export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build' }) => {
+export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks }) => {
   const isBurnPile = variant === 'burn';
   const dragItemId = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -35,16 +37,25 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
     setDragging(false);
   };
 
-  if (bricks.length === 0) {
+  if (bricks.length === 0 && variant === 'burn') {
     return (
       <div className={cn(
         "text-center py-10 font-code text-muted-foreground border-2 border-dashed rounded-lg",
-        isBurnPile ? "border-amber-900/40 bg-amber-900/10" : "border-secondary"
+        "border-amber-900/40 bg-amber-900/10"
       )}>
-        <p>{isBurnPile ? "// PILE EMPTY. GOOD." : "// NO BRICKS SCHEDULED."}</p>
+        <p>// PILE EMPTY. GOOD.</p>
       </div>
     );
   }
+  
+  const renderPlaceholders = () => {
+    if (variant !== 'build' || !maxBricks) return null;
+    const placeholderCount = maxBricks - bricks.length;
+    return Array.from({ length: placeholderCount }).map((_, index) => (
+      <BrickPlaceholder key={`placeholder-${index}`} />
+    ));
+  };
+
 
   return (
     <ul 
@@ -64,6 +75,7 @@ export const BrickList: FC<BrickListProps> = ({ bricks, removeBrick, burnBrick, 
           isDragging={dragging && dragItemId.current === brick.id}
         />
       ))}
+      {renderPlaceholders()}
     </ul>
   );
 };
