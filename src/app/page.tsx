@@ -1,26 +1,31 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/buildnotburn/Header";
 import { BrickForm } from "@/components/buildnotburn/BrickForm";
 import { BrickList } from "@/components/buildnotburn/BrickList";
 import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
 import { Wall } from "@/components/buildnotburn/Wall";
 import type { Brick } from "@/types";
-import { generateInitialBricks } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/lib/play-sound";
 import { Firebreak } from "@/components/buildnotburn/Firebreak";
-
-const { completed, incomplete } = generateInitialBricks();
+import { getInitialBricks } from "@/lib/mock-data";
 
 export default function Home() {
-  const [bricks, setBricks] = useState<Brick[]>(incomplete);
+  const [bricks, setBricks] = useState<Brick[]>([]);
   const [burnPile, setBurnPile] = useState<Brick[]>([]);
-  const [completedBricks, setCompletedBricks] = useState<Brick[]>(completed);
+  const [completedBricks, setCompletedBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const { completed, incomplete } = getInitialBricks();
+    setBricks(incomplete);
+    setCompletedBricks(completed);
+  }, []);
+
 
   const handleAuditSubmit = (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
@@ -109,7 +114,7 @@ export default function Home() {
             {allDailyBricksCompleted ? (
               <Firebreak onLayMore={handleLayMore} />
             ) : (
-              <BrickForm addBrick={addBrick} disabled={bricks.length >= maxBricks} />
+              <BrickForm addBrick={addBrick} disabled={maxBricks !== null && bricks.length >= maxBricks} />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
               <div>
