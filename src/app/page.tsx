@@ -16,9 +16,13 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 
 type AppState = 'paywall' | 'audit' | 'building';
+type Plan = 'trial' | 'builder' | 'architect';
+
+const TRIAL_MAX_BRICKS = 3;
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('paywall');
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [allHistoricalBricks, setAllHistoricalBricks] = useState<Brick[]>([]);
   const [maxBricks, setMaxBricks] = useState<number | null>(null);
   const [newBrickText, setNewBrickText] = useState("");
@@ -30,11 +34,14 @@ export default function Home() {
     setAllHistoricalBricks(allBricks);
   }, []);
 
-  const handlePlanSelect = (plan: 'free' | 'paid') => {
-    if (plan === 'free') {
+  const handlePlanSelect = (selectedPlan: Plan) => {
+    setPlan(selectedPlan);
+    if (selectedPlan === 'trial') {
+      setMaxBricks(TRIAL_MAX_BRICKS);
+      setAppState('building');
+    } else if (selectedPlan === 'builder') {
       setAppState('audit');
-    } else {
-      // For paid plan, we skip the audit and allow unlimited bricks
+    } else if (selectedPlan === 'architect') {
       setMaxBricks(Infinity); 
       setAppState('building');
     }
@@ -51,6 +58,15 @@ export default function Home() {
 
   const addBrick = (text: string) => {
     if (!text.trim()) return;
+
+    if (plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS) {
+      toast({
+        variant: "destructive",
+        title: "Trial Limit Reached",
+        description: "You've laid your 3 trial bricks! Upgrade to the Builder or Architect plan to continue.",
+      });
+      return;
+    }
 
     if (maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks) {
       toast({
@@ -76,7 +92,6 @@ export default function Home() {
     const brickToBurn = allHistoricalBricks.find(b => b.id === id);
     if (brickToBurn) {
         playSound('thud');
-        // We just filter it out from the view, not permanently delete, so it goes to the burn pile
         setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
         toast({
             title: "Brick Moved to Burn Pile",
@@ -122,7 +137,14 @@ export default function Home() {
                                   todaysIncompleteBricks.length === 0 &&
                                   todaysCompletedBricks.length >= maxBricks;
 
-  const burnPile = allHistoricalBricks.filter(b => b.date !== todayString && !b.isCompleted);
+  const burnPile = allHistoricalBricks.filter(b => {
+    const isToday = b.date === todayString;
+    return !isToday && !b.isCompleted;
+  });
+
+
+  const isTrialAndFull = plan === 'trial' && allHistoricalBricks.length >= TRIAL_MAX_BRICKS;
+  const isBuilderAndFull = plan === 'builder' && maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks;
 
   const renderContent = () => {
     switch (appState) {
@@ -140,7 +162,7 @@ export default function Home() {
                 addBrick={addBrick} 
                 text={newBrickText}
                 setText={setNewBrickText}
-                disabled={maxBricks !== null && maxBricks !== Infinity && todaysIncompleteBricks.length >= maxBricks} 
+                disabled={isTrialAndFull || isBuilderAndFull} 
               />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
@@ -151,7 +173,7 @@ export default function Home() {
                   removeBrick={completeBrick} 
                   burnBrick={burnBrick}
                   reorderBricks={reorderBricks}
-                  maxBricks={maxBricks === Infinity ? 99 : maxBricks}
+                  maxBricks={(plan === 'trial' || plan === 'builder') && maxBricks ? maxBricks - todaysIncompleteBricks.length : (plan === 'architect' ? 99 : 0)}
                   onPlaceholderClick={handlePlaceholderClick}
                 />
               </div>
