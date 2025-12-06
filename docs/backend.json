@@ -23,6 +23,10 @@
           "type": "string",
           "format": "uri",
           "description": "URL of the user's profile picture."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The user's phone number."
         }
       },
       "required": ["id", "email"]
@@ -77,6 +81,18 @@
         "$ref": "#/entities/Brick"
       },
       "description": "Stores the bricks for each user."
+    },
+    "/checkouts/{sessionId}": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "email": {"type": "string"},
+                "plan": {"type": "string", "enum": ["builder", "architect"]},
+                "displayName": {"type": "string"},
+                "phone": {"type": "string"}
+            }
+        },
+        "description": "Temporary storage for user data during Stripe checkout."
     }
   }
 }

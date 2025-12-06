@@ -12,7 +12,8 @@ import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sendSignInLink, signInWithGoogle, getOrCreateUser } from '@/firebase/auth';
 import { Separator } from '../ui/separator';
-
+import { createCheckoutSession } from '@/ai/flows/stripe-checkout-flow';
+import { loadStripe } from '@stripe/stripe-js';
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -23,12 +24,12 @@ interface PaywallProps {
 
 const plans = {
   builder: {
-    monthly: { price: 5, priceId: 'price_monthly_builder' },
-    annually: { price: 50, priceId: 'price_annual_builder' },
+    monthly: { price: 5, priceId: 'price_1PgQAmRrI1JzT5bY9N5wS3bE' },
+    annually: { price: 50, priceId: 'price_1PgQAmRrI1JzT5bYiJ5jF4S5' },
   },
   architect: {
-    monthly: { price: 10, priceId: 'price_monthly_architect' },
-    annually: { price: 100, priceId: 'price_annual_architect' },
+    monthly: { price: 10, priceId: 'price_1PgQBGRrI1JzT5bYqBZCj13b' },
+    annually: { price: 100, priceId: 'price_1PgQBGRrI1JzT5bYhB8o7d9q' },
   },
 };
 
@@ -40,7 +41,6 @@ const GoogleIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.622,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
     </svg>
 );
-
 
 export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
@@ -79,7 +79,6 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
       setIsLoading(true);
       try {
         const userCredential = await signInWithGoogle();
-        // The useUser hook will handle the redirect, but we can also create the user doc here
         if (userCredential.user) {
             await getOrCreateUser(userCredential.user);
         }
@@ -93,6 +92,45 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
           setIsLoading(false);
       }
   }
+
+    const handlePaidPlanSelect = async (plan: 'builder' | 'architect') => {
+        if (!user) {
+            toast({
+                title: "Please Sign In",
+                description: "You need to be signed in to choose a paid plan.",
+                variant: "destructive"
+            });
+            document.getElementById('email-input')?.focus();
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const priceId = plans[plan][billingCycle].priceId;
+            const { sessionId, url } = await createCheckoutSession({
+                priceId,
+                email: user.email!,
+                userId: user.uid,
+                plan: plan
+            });
+
+            if (url) {
+                window.location.href = url;
+            } else {
+                throw new Error("Could not create Stripe Checkout session.");
+            }
+        } catch (error: any) {
+            console.error("Error creating checkout session:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not proceed to checkout. Please try again later.',
+            });
+            setIsLoading(false);
+        }
+    };
+
 
   return (
     <div className="max-w-6xl mx-auto my-8">
@@ -179,8 +217,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button className="w-full font-bold" onClick={() => user ? onPlanSelect('builder') : document.getElementById('email-input')?.focus()}>
-              {user ? 'Become a Builder' : 'Sign in to Choose'}
+            <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={isLoading}>
+                {isLoading ? 'Processing...' : user ? 'Become a Builder' : 'Sign in to Choose'}
             </Button>
           </CardFooter>
         </Card>
@@ -216,8 +254,8 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
             </ul>
           </CardContent>
           <CardFooter>
-             <Button variant="secondary" className="w-full" onClick={() => user ? onPlanSelect('architect') : document.getElementById('email-input')?.focus()}>
-                {user ? 'Become an Architect' : 'Sign in to Choose'}
+             <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={isLoading}>
+                {isLoading ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Choose'}
             </Button>
           </CardFooter>
         </Card>
