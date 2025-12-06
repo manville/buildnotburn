@@ -45,27 +45,19 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
-  const handleGuideClose = () => {
-    localStorage.setItem('hasSeenGuide', 'true');
-    setIsGuideOpen(false);
-  }
 
   useEffect(() => {
     if (userLoading) {
-        setAppState('loading');
-        return;
+      setAppState('loading');
+      return;
     }
 
-    // If there is no user, they should see the paywall.
     if (!user) {
-        setAppState('paywall');
-        setPlan(null);
-        setMaxBricks(null);
-        setAllHistoricalBricks([]);
-        return;
+      setAppState('paywall');
+      return;
     }
-
-    // If there IS a user, listen to their data for plan changes.
+    
+    // User is logged in, listen to their data.
     if (db) {
         const userRef = doc(db, `users/${user.uid}`);
         const unsubscribeUser = onSnapshot(userRef, (userDoc) => {
@@ -73,9 +65,9 @@ export default function Home() {
                 const userPlan: Plan = userDoc.data().plan || 'trial';
                 setPlan(userPlan);
                 
-                // Show guide on first paid login
                 const hasSeenGuide = localStorage.getItem('hasSeenGuide');
-                if (!hasSeenGuide && (userPlan === 'builder' || userPlan === 'architect')) {
+                const isPaid = userPlan === 'builder' || userPlan === 'architect';
+                if (!hasSeenGuide && isPaid) {
                   setIsGuideOpen(true);
                 }
 
@@ -90,7 +82,6 @@ export default function Home() {
                     setMaxBricks(TRIAL_MAX_BRICKS);
                 }
             } else {
-                // New user doc doesn't exist yet, default to trial
                 setPlan('trial');
                 setAppState('building');
                 setMaxBricks(TRIAL_MAX_BRICKS);
@@ -121,7 +112,6 @@ export default function Home() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      // The useEffect above will handle state changes when user becomes null
     }
   };
 
@@ -129,6 +119,11 @@ export default function Home() {
   const handleAuditSubmit = (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
     setAppState('building');
+  };
+  
+  const handleGuideClose = () => {
+    localStorage.setItem('hasSeenGuide', 'true');
+    setIsGuideOpen(false);
   };
 
   const todayString = getTodayString();
@@ -341,3 +336,5 @@ export default function Home() {
     </main>
   );
 }
+
+    

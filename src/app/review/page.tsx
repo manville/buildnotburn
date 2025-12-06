@@ -60,13 +60,6 @@ export default function ReviewPage() {
             await signOut(auth);
         }
     };
-
-    const handlePlanSelect = (selectedPlan: Plan) => {
-        if (user && db) {
-            const userRef = doc(db, "users", user.uid);
-            setDoc(userRef, { plan: selectedPlan }, { merge: true });
-        }
-    }
     
     const renderContent = () => {
         if (isLoading || userLoading) {
@@ -86,7 +79,16 @@ export default function ReviewPage() {
         }
         
         if (plan === 'trial') {
-            return <Paywall onPlanSelect={handlePlanSelect} user={user} />;
+            return <Paywall 
+                user={user}
+                variantIds={{
+                    newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
+                    builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
+                    builderAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID!,
+                    architectMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID!,
+                    architectAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID!,
+                }}
+            />;
         }
 
         if (analytics) {
@@ -99,7 +101,7 @@ export default function ReviewPage() {
 
     return (
         <main className="container mx-auto max-w-6xl px-4 min-h-screen flex flex-col">
-            <Header user={user} onLogout={handleLogout} />
+            <Header user={user} plan={plan} onLogout={handleLogout} onOpenGuide={() => {}} />
             <div className="w-full flex-grow">
               <h1 className="font-headline text-4xl uppercase tracking-wider mb-8">Your Review</h1>
               {renderContent()}
@@ -107,3 +109,5 @@ export default function ReviewPage() {
         </main>
     );
 }
+
+    
