@@ -14,9 +14,9 @@ import { Firebreak } from "@/components/buildnotburn/Firebreak";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import { Paywall } from "@/components/buildnotburn/Paywall";
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, query, writeBatch } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { getTodayString, getInitialBricks } from "@/lib/mock-data";
+import { getTodayString, getYesterdayString, getInitialBricks } from "@/lib/mock-data";
 import { NewsletterForm } from "@/components/buildnotburn/NewsletterForm";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 
@@ -53,7 +53,6 @@ export default function Home() {
   const syncAnonymousBricks = async (userId: string) => {
     if (!db || allHistoricalBricks.length === 0) return;
     
-    // Check if there are any locally-created bricks to sync
     const bricksToSync = allHistoricalBricks.filter(brick => 
         typeof brick.id === 'string' && brick.id.startsWith('local-')
     );
@@ -65,7 +64,6 @@ export default function Home() {
 
     bricksToSync.forEach(brick => {
       const newBrickRef = doc(bricksCol);
-      // Create a new brick object for Firestore, excluding the local 'id'
       const brickData: Omit<Brick, 'id'> & { createdAt: any } = {
         text: brick.text,
         isCompleted: brick.isCompleted,
@@ -78,8 +76,6 @@ export default function Home() {
 
     try {
       await batch.commit();
-      // After successful sync, we will rely on the Firestore listener
-      // to update the state, so no immediate state change is needed here.
     } catch (error) {
       console.error("Error syncing bricks:", error);
       toast({
@@ -99,8 +95,6 @@ export default function Home() {
       setPlan('trial'); 
       setMaxBricks(TRIAL_MAX_BRICKS);
       
-      // For new/anonymous users, load sample data to populate the wall
-      // but only if they haven't started adding their own local bricks.
       const localBricks = allHistoricalBricks.filter(b => b.userId === 'anonymous');
       if (localBricks.length === 0) {
         const { allBricks: mockBricks } = getInitialBricks();
@@ -112,7 +106,6 @@ export default function Home() {
       return;
     }
 
-    // If we are transitioning from anonymous to logged-in, clear sample bricks
     if (allHistoricalBricks.some(b => b.userId !== user.uid)) {
         setAllHistoricalBricks([]);
     }
@@ -136,8 +129,6 @@ export default function Home() {
         const userPlan: Plan = userData.plan || 'trial';
         handlePlanSelect(userPlan, false);
       } else {
-        // User document doesn't exist, might be a fresh signup. 
-        // getOrCreateUser handles creation, so we can just set a default here.
         handlePlanSelect('trial', false);
       }
     }, (error) => {
@@ -185,15 +176,14 @@ export default function Home() {
   };
 
   const todayString = getTodayString();
-  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : b.userId === 'anonymous'));
-  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : b.userId === 'anonymous'));
+  const todaysIncompleteBricks = allHistoricalBricks.filter(b => !b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user')));
+  const todaysCompletedBricks = allHistoricalBricks.filter(b => b.isCompleted && b.date === todayString && (user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user')));
 
   const addBrick = async (text: string) => {
     if (!text.trim()) return;
     const upperCaseText = text.toUpperCase();
 
-    // On first brick add by anonymous user, clear sample data.
-    if (!user && !allHistoricalBricks.some(b => b.userId === 'anonymous')) {
+    if (!user && allHistoricalBricks.some(b => b.userId === 'sample-user')) {
       setAllHistoricalBricks([]);
     }
 
@@ -256,17 +246,22 @@ export default function Home() {
   const burnBrick = async (id: string) => {
     const brickToBurn = allHistoricalBricks.find(b => b.id === id);
     if (!brickToBurn) return;
-
+  
     playSound('thud');
     toast({
       title: "Brick Moved to Burn Pile",
       description: `"${brickToBurn.text}" is no longer a priority for today.`,
     });
-    
-    if (!user || !db || brickToBurn.id.toString().startsWith('local-')) {
-      setAllHistoricalBricks(prev => prev.filter(b => b.id !== id));
+  
+    const yesterday = getYesterdayString();
+  
+    if (!user || !db || id.toString().startsWith('local-')) {
+      setAllHistoricalBricks(prev => prev.map(b => 
+        b.id === id ? { ...b, date: yesterday } : b
+      ));
     } else {
-      await deleteDoc(doc(db, `users/${user.uid}/bricks/${id}`));
+      const brickRef = doc(db, `users/${user.uid}/bricks/${id}`);
+      await updateDoc(brickRef, { date: yesterday });
     }
   };
 
@@ -307,11 +302,9 @@ export default function Home() {
 
   const burnPile = allHistoricalBricks.filter(b => {
     const isToday = b.date === todayString;
-    // For anonymous users, only show bricks they've created. For logged in, only their bricks.
-    const isOwner = user ? b.userId === user.uid : b.userId === 'anonymous';
+    const isOwner = user ? b.userId === user.uid : (b.userId === 'anonymous' || b.userId === 'sample-user');
     return !isToday && !b.isCompleted && isOwner;
   });
-
 
   const isAtBrickLimit = 
       (!user && todaysIncompleteBricks.length >= TRIAL_MAX_BRICKS) ||
@@ -385,5 +378,7 @@ export default function Home() {
     </main>
   );
 }
+
+    
 
     
