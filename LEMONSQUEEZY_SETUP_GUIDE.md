@@ -7,7 +7,7 @@ Follow these steps to configure your Lemon Squeezy account to work seamlessly wi
 
 ## 1. Create Your Products and Variants
 
-You need to create three products in your Lemon Squeezy store: two paid subscription plans and one free newsletter signup.
+You need to create three products in your Lemon Squeezy store: two paid subscription plans (which include the guide) and one free newsletter signup.
 
 ### Step 1: Create the "Builder" Subscription Plan
 
@@ -16,7 +16,7 @@ You need to create three products in your Lemon Squeezy store: two paid subscrip
 3.  Click **New Product**.
 4.  **Name**: `Builder Plan`
 5.  **Pricing**: Select `Subscription`.
-6.  **Files (Optional)**: If you have the guide PDF, you can upload it here. It will be delivered automatically to customers after purchase.
+6.  **Files**: Upload your Guide PDF here. It will be delivered automatically to customers after purchase. This is how you "sell" the guide.
 7.  Click **Save Product**.
 
 Now, add the pricing variants:
@@ -24,7 +24,7 @@ Now, add the pricing variants:
 1.  On the product page, find the **Variants** section and click **Add Variant**.
 2.  **Monthly Variant**:
     *   **Name**: `Monthly`
-    *   **Price**: `$5.00` (or your desired price)
+    *   **Price**: `$8.00` (or your desired price)
     *   **Billing Cycle**: `Month`
     *   Click **Publish variant**.
     *   After publishing, click the **three dots (...)** next to the variant and **copy the Variant ID**. You will need this.
@@ -32,7 +32,7 @@ Now, add the pricing variants:
 3.  **Annual Variant**:
     *   Click **Add Variant** again.
     *   **Name**: `Annually`
-    *   **Price**: `$50.00` (or your desired price)
+    *   **Price**: `$80.00` (or your desired price)
     *   **Billing Cycle**: `Year`
     *   Click **Publish variant**.
     *   Copy the **Variant ID** for this annual variant.
@@ -44,15 +44,15 @@ Now, add the pricing variants:
 Repeat the process from Step 1 for the Architect plan.
 
 1.  Create a new product named `Architect Plan`.
-2.  Make it a `Subscription`.
+2.  Make it a `Subscription` and upload the same Guide PDF to the **Files** section.
 3.  **Monthly Variant**:
     *   **Name**: `Monthly`
-    *   **Price**: `$10.00`
+    *   **Price**: `$15.00`
     *   **Billing Cycle**: `Month`
     *   Publish and copy the **Variant ID**.
 4.  **Annual Variant**:
     *   **Name**: `Annually`
-    *   **Price**: `$100.00`
+    *   **Price**: `$150.00`
     *   **Billing Cycle**: `Year`
     *   Publish and copy the **Variant ID**.
 
@@ -132,7 +132,5 @@ NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID="REPLACE_WITH_ARCHITECT_A
 # Note: You also need to add your Firebase config and Google Application Credentials for the webhook to write to Firestore.
 # GOOGLE_APPLICATION_CREDENTIALS="..."
 ```
-
-Finally, you will need to update `src/components/buildnotburn/Paywall.tsx` with the real variant IDs you just got. I have already updated the `.env` file with placeholders, but you also need to make sure the Paywall component is using the correct environment variable names.
 
 After you have completed these steps, your application will be fully connected to Lemon Squeezy.

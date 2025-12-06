@@ -5,7 +5,7 @@ import { useState, type FC, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Check, Mail } from 'lucide-react';
+import { Check, Mail, BookCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
 import { Input } from '../ui/input';
@@ -17,18 +17,18 @@ import { createLemonSqueezyCheckout } from '@/ai/flows/lemonsqueezy-checkout-flo
 type Plan = 'trial' | 'builder' | 'architect';
 
 interface PaywallProps {
-  onPlanSelect: (plan: Plan) => void;
+  onPlanSelect: (plan: Plan, writeToDb: boolean) => void;
   user: User | null;
 }
 
 const plans = {
   builder: {
-    monthly: { price: 5, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID! },
-    annually: { price: 50, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID! },
+    monthly: { price: 8, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID! },
+    annually: { price: 80, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID! },
   },
   architect: {
-    monthly: { price: 10, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID! },
-    annually: { price: 100, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID! },
+    monthly: { price: 15, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID! },
+    annually: { price: 150, variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID! },
   },
 };
 
@@ -97,7 +97,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
     if (!user) {
         toast({
             title: "Please Sign In",
-            description: "You need to be signed in to choose a paid plan.",
+            description: "You need to be signed in to purchase a plan.",
             variant: "destructive"
         });
         document.getElementById('email-input')?.focus();
@@ -150,7 +150,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
       <div className="text-center mb-12">
         <h1 className="font-headline text-4xl sm:text-5xl uppercase tracking-wider">Choose Your System</h1>
         <p className="font-code text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Commit to a sustainable process. Start for free or become a supporter to unlock your full potential.
+          Start for free with the newsletter, or purchase a plan to get the guide, the app, and the system.
         </p>
       </div>
 
@@ -162,36 +162,40 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
           aria-label="Toggle between monthly and annual billing"
         />
         <span className={cn('font-medium', billingCycle === 'annually' && 'text-primary')}>
-          Annually <span className="text-xs text-green-500 font-bold">(Save 17%)</span>
+          Annually <span className="text-xs text-green-500 font-bold">(Save ~17%)</span>
         </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Free Plan */}
+        {/* Free Newsletter */}
         <Card className="border-border/60">
           <CardHeader className="pb-4">
-            <CardTitle className="font-headline text-2xl uppercase">Trial</CardTitle>
-            <CardDescription className="font-code text-sm">A taste of the system.</CardDescription>
+            <CardTitle className="font-headline text-2xl uppercase">The Newsletter</CardTitle>
+            <CardDescription className="font-code text-sm">Insights on sustainable creativity.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold">$0</span>
               <span className="text-muted-foreground">/ forever</span>
             </div>
-            <ul className="space-y-2 text-sm text-muted-foreground h-[150px]">
+            <ul className="space-y-2 text-sm text-muted-foreground h-[180px]">
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
-                <span>3 total bricks, lifetime</span>
+                <span>Weekly insights & tips</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
-                <span>The Wall timeline view</span>
+                <span>Join the community</span>
+              </li>
+               <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>Use the app with a 3-brick limit</span>
               </li>
             </ul>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" onClick={() => onPlanSelect('trial')}>
-              Start Trial
+            <Button variant="outline" className="w-full" onClick={() => onPlanSelect('trial', false)}>
+              Continue with Free Trial
             </Button>
           </CardFooter>
         </Card>
@@ -210,32 +214,32 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
               <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.builder.monthly.price : Math.round(plans.builder.annually.price / 12)}</span>
               <span className="text-muted-foreground">/ month</span>
             </div>
-            <ul className="space-y-2 text-sm text-foreground h-[150px]">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span className="font-medium">Daily brick limit via Energy Audit</span>
+            <ul className="space-y-2 text-sm text-foreground h-[180px]">
+               <li className="flex items-center gap-2">
+                <BookCheck className="h-4 w-4 text-primary" />
+                <span className="font-medium">The Full Guide & PDF Blueprint</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
-                <span>Full access to The Wall</span>
+                <span className="font-medium">The BuildNotBurn Web App</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
-                <span>Cloud data sync</span>
+                <span>Daily brick limit via Energy Audit</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>Cloud data sync & The Wall</span>
               </li>
                <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span>Review Dashboard Analytics</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Directly support development</span>
-              </li>
             </ul>
           </CardContent>
           <CardFooter>
             <Button className="w-full font-bold" onClick={() => handlePaidPlanSelect('builder')} disabled={!!isLoading}>
-                {isLoading === 'builder' ? 'Processing...' : user ? 'Become a Builder' : 'Sign in to Choose'}
+                {isLoading === 'builder' ? 'Processing...' : user ? 'Get the System' : 'Sign in to Purchase'}
             </Button>
           </CardFooter>
         </Card>
@@ -251,7 +255,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
                <span className="text-4xl font-bold">${billingCycle === 'monthly' ? plans.architect.monthly.price : Math.round(plans.architect.annually.price / 12)}</span>
               <span className="text-muted-foreground">/ month</span>
             </div>
-             <ul className="space-y-2 text-sm text-foreground h-[150px]">
+             <ul className="space-y-2 text-sm text-foreground h-[180px]">
                <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span className="font-medium">Everything in Builder, plus:</span>
@@ -272,7 +276,7 @@ export const Paywall: FC<PaywallProps> = ({ onPlanSelect, user }) => {
           </CardContent>
           <CardFooter>
              <Button variant="secondary" className="w-full" onClick={() => handlePaidPlanSelect('architect')} disabled={!!isLoading}>
-                {isLoading === 'architect' ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Choose'}
+                {isLoading === 'architect' ? 'Processing...' : user ? 'Become an Architect' : 'Sign in to Purchase'}
             </Button>
           </CardFooter>
         </Card>
