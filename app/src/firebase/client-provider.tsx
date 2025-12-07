@@ -2,12 +2,9 @@
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { initializeFirebase } from '.';
 import { FirebaseProvider } from './provider';
-
-// Initialize Firebase on the client-side. This will only run once.
-const firebaseInstances = initializeFirebase();
 
 type FirebaseInstances = {
   app: FirebaseApp;
@@ -16,14 +13,21 @@ type FirebaseInstances = {
 };
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  if (!firebaseInstances) {
-    // This can happen during server-side rendering or if initialization fails.
-    // We render null to prevent children from trying to access Firebase prematurely.
+  const [instances, setInstances] = useState<FirebaseInstances | null>(null);
+
+  useEffect(() => {
+    // Initialize Firebase on the client and update state
+    const firebaseInstances = initializeFirebase();
+    setInstances(firebaseInstances);
+  }, []);
+
+  // Don't render children until Firebase is initialized
+  if (!instances) {
     return null;
   }
 
   return (
-    <FirebaseProvider value={firebaseInstances}>
+    <FirebaseProvider value={instances}>
       {children}
     </FirebaseProvider>
   );
