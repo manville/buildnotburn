@@ -1,3 +1,4 @@
+
 'use client';
 import type { Auth, User, UserCredential } from "firebase/auth";
 import { GoogleAuthProvider, sendSignInLinkToEmail, signInWithPopup } from "firebase/auth";
