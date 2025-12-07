@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithGoogle, sendSignInLink, getOrCreateUser } from '@/firebase/auth';
+import { useAuth, useFirestore } from '@/firebase';
 
 const GoogleIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
@@ -43,6 +43,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState<'google' | 'email' | false>(false);
   const { toast } = useToast();
+  const auth = useAuth();
+  const db = useFirestore();
 
   const isSignup = variant === 'signup';
 
@@ -58,7 +60,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
 
   const handleEmailFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !auth) return;
 
     setIsLoading('email');
     
@@ -71,7 +73,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         await onEmailSubmit(name, email);
     } else {
         try {
-            await sendSignInLink(email);
+            await sendSignInLink(auth, email);
             window.localStorage.setItem('emailForSignIn', email);
             toast({
                 title: 'Check your email',
@@ -91,9 +93,10 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   };
 
   const defaultGoogleSignIn = async () => {
+      if (!auth || !db) return;
       try {
-        const credential = await signInWithGoogle();
-        await getOrCreateUser(credential.user);
+        const credential = await signInWithGoogle(auth);
+        await getOrCreateUser(db, credential.user);
         toast({ title: 'Signed in with Google' });
         onClose();
       } catch (error: any) {
