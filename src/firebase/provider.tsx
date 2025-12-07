@@ -1,3 +1,4 @@
+
 'use client';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
@@ -53,3 +54,5 @@ export const useFirestore = () => {
   }
   return context.db;
 };
+
+    
