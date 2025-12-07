@@ -45,6 +45,10 @@
             "type": "string",
             "format": "date-time",
             "description": "The date the user's subscription is set to renew."
+        },
+        "maxBricks": {
+            "type": "number",
+            "description": "The maximum number of bricks the user can lay per day, based on their energy audit."
         }
       },
       "required": ["id", "email"]
@@ -114,3 +118,5 @@
     }
   }
 }
+
+    

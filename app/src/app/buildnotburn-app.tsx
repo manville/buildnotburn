@@ -75,10 +75,14 @@ export function BuildNotBurnApp() {
           const isPaid = userPlan === 'builder' || userPlan === 'architect';
           
           // Set app state based on plan
-          if (userPlan === 'builder') {
+          if (userPlan === 'builder' && userDoc.data().maxBricks === undefined) {
             setAppState('audit');
             setMaxBricks(null);
-          } else if (userPlan === 'architect') {
+          } else if (userPlan === 'builder') {
+             setAppState('building');
+             setMaxBricks(userDoc.data().maxBricks);
+          }
+          else if (userPlan === 'architect') {
             setAppState('building');
             setMaxBricks(Infinity);
           } else { // Trial plan
@@ -122,9 +126,13 @@ export function BuildNotBurnApp() {
   };
 
 
-  const handleAuditSubmit = (maxBricksValue: number) => {
+  const handleAuditSubmit = async (maxBricksValue: number) => {
     setMaxBricks(maxBricksValue);
     setAppState('building');
+    if (user && db) {
+        const userRef = doc(db, `users/${user.uid}`);
+        await updateDoc(userRef, { maxBricks: maxBricksValue });
+    }
   };
   
   const handleGuideClose = () => {
