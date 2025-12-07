@@ -22,7 +22,7 @@ import { playSound } from "@/lib/play-sound";
 
 type Plan = 'trial' | 'builder' | 'architect';
 
-export default function BuildNotBurnApp() {
+export function BuildNotBurnApp() {
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
@@ -226,3 +226,5 @@ export default function BuildNotBurnApp() {
     </>
   );
 }
+
+export default BuildNotBurnApp;
