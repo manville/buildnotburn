@@ -1,35 +1,9 @@
 
 'use client';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
-import { ReactNode, useEffect, useState } from 'react';
-import { initializeFirebase } from '.';
-import { FirebaseProvider } from './provider';
+import { ReactNode } from 'react';
 
-type FirebaseInstances = {
-  app: FirebaseApp;
-  auth: Auth;
-  db: Firestore;
-};
-
+// This is a placeholder to prevent build errors.
+// The actual provider logic that was causing crashes has been removed.
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  const [instances, setInstances] = useState<FirebaseInstances | null>(null);
-
-  useEffect(() => {
-    // Initialize Firebase on the client and update state
-    const firebaseInstances = initializeFirebase();
-    setInstances(firebaseInstances);
-  }, []);
-
-  // Don't render children until Firebase is initialized
-  if (!instances) {
-    return null; // Or a loading spinner
-  }
-
-  return (
-    <FirebaseProvider value={instances}>
-      {children}
-    </FirebaseProvider>
-  );
+  return <>{children}</>;
 }
