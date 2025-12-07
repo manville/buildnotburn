@@ -44,6 +44,19 @@ const createCheckoutUrlFlow = ai.defineFlow(
         const isFreeTier = plan === 'trial';
         const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/checkout/success`;
 
+        // Conditionally build checkout_data. For free products, LS doesn't want email/name.
+        const checkoutData: { email?: string; name?: string; custom: any } = {
+            custom: {
+                user_id: userId,
+                plan: plan,
+            },
+        };
+
+        if (!isFreeTier) {
+            checkoutData.email = email;
+            checkoutData.name = name;
+        }
+
         const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
             method: 'POST',
             headers: {
@@ -55,14 +68,7 @@ const createCheckoutUrlFlow = ai.defineFlow(
                 data: {
                     type: 'checkouts',
                     attributes: {
-                        checkout_data: {
-                            email: email,
-                            name: name,
-                            custom: {
-                                user_id: userId,
-                                plan: plan,
-                            },
-                        },
+                        checkout_data: checkoutData,
                         redirect_url: redirectUrl,
                     },
                     relationships: {
