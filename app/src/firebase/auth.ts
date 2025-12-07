@@ -1,6 +1,8 @@
 'use client';
-import { getAuth, sendSignInLinkToEmail, GoogleAuthProvider, signInWithPopup, UserCredential, User, Auth } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, Firestore } from "firebase/firestore";
+import type { Auth, User, UserCredential } from "firebase/auth";
+import { GoogleAuthProvider, sendSignInLinkToEmail, signInWithPopup } from "firebase/auth";
+import type { Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export const sendSignInLink = async (auth: Auth, email: string) => {
     const actionCodeSettings = {

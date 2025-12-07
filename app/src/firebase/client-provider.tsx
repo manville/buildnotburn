@@ -23,7 +23,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
 
   // Don't render children until Firebase is initialized
   if (!instances) {
-    return null;
+    return null; // Or a loading spinner
   }
 
   return (
