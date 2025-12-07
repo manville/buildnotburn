@@ -26,9 +26,11 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   // This renders a safe, static loading state on the server.
   if (!instances) {
     return (
-       <div className="w-full min-h-screen flex items-center justify-center font-code text-muted-foreground">
-          INITIALIZING SYSTEMS...
-       </div>
+       <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
+          <div className="w-full flex-grow flex items-center justify-center">
+             <div className="text-center font-code text-muted-foreground">INITIALIZING SYSTEMS...</div>
+          </div>
+        </main>
     );
   }
 

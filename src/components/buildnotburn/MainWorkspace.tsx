@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -36,17 +37,16 @@ export const MainWorkspace: FC<MainWorkspaceProps> = ({
   }
   
   const handlePlaceholderClick = (text: string) => {
-      if (bricks.length < (maxBricks || 0)) {
+      if (!maxBricks || (bricks.length < maxBricks)) {
         addBrick(text);
       }
   }
 
   const buildListBricks = bricks.filter(b => !b.isCompleted);
-  const burnPileBricks = bricks.filter(b => b.isCompleted); // This seems wrong, should be another state
 
   const isAtCapacity = maxBricks !== null && buildListBricks.length >= maxBricks;
 
-  if (isAtCapacity) {
+  if (isAtCapacity && maxBricks !== 999) {
     return <Firebreak onLayMore={onLayMore} />;
   }
 

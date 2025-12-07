@@ -54,5 +54,3 @@ export const useFirestore = () => {
   }
   return context.db;
 };
-
-    
