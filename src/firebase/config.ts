@@ -14,7 +14,9 @@ const firebaseConfig = {
 };
 
 export function getFirebaseConfig() {
-  if (!firebaseConfig.apiKey) {
+  if (!firebaseConfig.apiKey && typeof window !== 'undefined') {
+    // Only throw an error on the client-side if the config is missing.
+    // This prevents the server build from crashing.
     throw new Error('Missing Firebase config. Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set.')
   }
   return firebaseConfig

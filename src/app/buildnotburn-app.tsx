@@ -10,7 +10,7 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import Link from "next/link";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, onSnapshot, doc, query, orderBy, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, query, orderBy, setDoc } from 'firebase/firestore';
 import type { Brick } from '@/types';
 import { Paywall, type VariantIds } from "@/components/buildnotburn/Paywall";
 import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
@@ -114,7 +114,7 @@ export function BuildNotBurnApp() {
 
   const renderContent = () => {
     if (!user) {
-        return <Paywall variantIds={variantIds} onSignIn={() => setIsSignInModalOpen(true)} />;
+        return <Paywall variantIds={variantIds} />;
     }
     
     if (plan !== 'architect' && !hasCompletedAudit) {
