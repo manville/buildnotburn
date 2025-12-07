@@ -10,8 +10,12 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import Link from "next/link";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, onSnapshot, doc, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import type { Brick } from '@/types';
+import { Paywall, type VariantIds } from "@/components/buildnotburn/Paywall";
+import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
+import { MainWorkspace } from "@/components/buildnotburn/MainWorkspace";
+import { generateMockWallBricks } from "@/lib/mock-data";
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -25,13 +29,24 @@ export function BuildNotBurnApp() {
 
   const [bricks, setBricks] = useState<Brick[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [maxBricks, setMaxBricks] = useState<number | null>(null);
+  const [hasCompletedAudit, setHasCompletedAudit] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const variantIds: VariantIds = {
+    newsletter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_NEWSLETTER_VARIANT_ID!,
+    builderMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_MONTHLY_VARIANT_ID!,
+    builderAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUILDER_ANNUALLY_VARIANT_ID!,
+    architectMonthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_MONTHLY_VARIANT_ID!,
+    architectAnnually: process.env.NEXT_PUBLIC_LEMONSQUEEZY_ARCHITECT_ANNUALLY_VARIANT_ID!,
+  };
 
   useEffect(() => {
     if (userLoading) {
       return;
     }
     if (!user || !db) {
+      setBricks(generateMockWallBricks());
       setIsLoading(false);
       return;
     }
@@ -46,6 +61,13 @@ export function BuildNotBurnApp() {
       if (doc.exists()) {
         const userData = doc.data();
         setPlan(userData.plan || 'trial');
+        const userMaxBricks = userData.maxBricks;
+        if(userMaxBricks) {
+            setMaxBricks(userMaxBricks);
+            setHasCompletedAudit(true);
+        }
+      } else {
+        setPlan('trial');
       }
       setIsLoading(false);
     });
@@ -64,6 +86,18 @@ export function BuildNotBurnApp() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      setMaxBricks(null);
+      setHasCompletedAudit(false);
+      setPlan(null);
+    }
+  };
+
+  const handleAuditSubmit = async (newMaxBricks: number) => {
+    setMaxBricks(newMaxBricks);
+    setHasCompletedAudit(true);
+    if (user && db) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { maxBricks: newMaxBricks }, { merge: true });
     }
   };
   
@@ -78,13 +112,24 @@ export function BuildNotBurnApp() {
     )
   }
 
+  const renderContent = () => {
+    if (!user) {
+        return <Paywall variantIds={variantIds} onSignIn={() => setIsSignInModalOpen(true)} />;
+    }
+    
+    if (plan !== 'architect' && !hasCompletedAudit) {
+        return <EnergyAudit onSubmit={handleAuditSubmit} />;
+    }
+
+    return <MainWorkspace bricks={bricks} maxBricks={plan === 'architect' ? 999 : maxBricks} />;
+  }
+
   return (
     <>
       <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
         <Header user={user} plan={plan} onLogout={handleLogout} onOpenGuide={() => setIsGuideOpen(true)} onSignIn={() => setIsSignInModalOpen(true)} />
         <div className="w-full flex-grow">
-           {/* Main content will go here once user is logged in */}
-           <div className="text-center font-code text-muted-foreground">SYSTEMS ONLINE. AWAITING DIRECTIVES.</div>
+            {renderContent()}
         </div>
         <Wall bricks={bricks} />
         <footer className="text-center py-8 mt-auto font-code text-xs text-muted-foreground/50 flex flex-col items-center gap-8">
