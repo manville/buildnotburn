@@ -6,6 +6,7 @@ import type { Firestore } from 'firebase/firestore';
 import { ReactNode, useEffect, useState } from 'react';
 import { initializeFirebase } from '.';
 import { FirebaseProvider } from './provider';
+import { Header } from '@/components/buildnotburn/Header';
 
 type FirebaseInstances = {
   app: FirebaseApp;
@@ -22,15 +23,16 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     setInstances(firebaseInstances);
   }, []);
 
-  // Don't render children until Firebase is initialized on the client.
-  // This renders a safe, static loading state on the server.
+  // While Firebase is initializing, render a server-safe loading state.
+  // This prevents any child components from trying to use Firebase before it's ready.
   if (!instances) {
     return (
        <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-          <div className="w-full flex-grow flex items-center justify-center">
-             <div className="text-center font-code text-muted-foreground">INITIALIZING SYSTEMS...</div>
-          </div>
-        </main>
+        <Header user={null} plan={null} onLogout={() => {}} onOpenGuide={() => {}} onSignIn={() => {}} />
+        <div className="w-full flex-grow flex items-center justify-center">
+           <div className="text-center font-code text-muted-foreground">INITIALIZING SYSTEMS...</div>
+        </div>
+      </main>
     );
   }
 

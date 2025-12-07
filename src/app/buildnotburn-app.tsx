@@ -8,7 +8,7 @@ import { SignInModal } from "@/components/buildnotburn/SignInModal";
 import { Wall } from "@/components/buildnotburn/Wall";
 import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import Link from "next/link";
-import { useUser, useAuth, useFirestore, initializeFirebase } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, query, orderBy, setDoc, serverTimestamp, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Brick } from '@/types';
