@@ -1,16 +1,16 @@
 'use client';
-import { FirebaseApp } from 'firebase/app';
-import { Auth } from 'firebase/auth';
-import { Firestore } from 'firebase/firestore';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 import { ReactNode, createContext, useContext } from 'react';
 
 type FirebaseContextValue = {
-  app: FirebaseApp | null;
-  auth: Auth | null;
-  db: Firestore | null;
+  app: FirebaseApp;
+  auth: Auth;
+  db: Firestore;
 };
 
-const FirebaseContext = createContext<FirebaseContextValue>({ app: null, auth: null, db: null });
+const FirebaseContext = createContext<FirebaseContextValue | null>(null);
 
 export function FirebaseProvider({ children, value }: { children: ReactNode, value: FirebaseContextValue }) {
   return (
@@ -20,7 +20,36 @@ export function FirebaseProvider({ children, value }: { children: ReactNode, val
   );
 }
 
-export const useFirebase = () => useContext(FirebaseContext);
-export const useFirebaseApp = () => useContext(FirebaseContext)?.app;
-export const useAuth = () => useContext(FirebaseContext)?.auth;
-export const useFirestore = () => useContext(FirebaseContext)?.db;
+// --- Custom Hooks with Context Validation ---
+
+export const useFirebase = () => {
+  const context = useContext(FirebaseContext);
+  if (context === null) {
+    throw new Error('useFirebase must be used within a FirebaseProvider');
+  }
+  return context;
+};
+
+export const useFirebaseApp = () => {
+  const context = useContext(FirebaseContext);
+  if (context === null) {
+    throw new Error('useFirebaseApp must be used within a FirebaseProvider');
+  }
+  return context.app;
+};
+
+export const useAuth = () => {
+  const context = useContext(FirebaseContext);
+  if (context === null) {
+    throw new Error('useAuth must be used within a FirebaseProvider');
+  }
+  return context.auth;
+};
+
+export const useFirestore = () => {
+  const context = useContext(FirebaseContext);
+  if (context === null) {
+    throw new Error('useFirestore must be used within a FirebaseProvider');
+  }
+  return context.db;
+};
