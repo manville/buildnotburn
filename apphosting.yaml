@@ -5,3 +5,6 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # The node_version can be any of the major versions supported by Cloud Functions
+  # https://cloud.google.com/functions/docs/concepts/nodejs-runtime
+  node_version: 20
