@@ -39,5 +39,3 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     </FirebaseProvider>
   );
 }
-
-    
