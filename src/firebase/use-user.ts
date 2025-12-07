@@ -12,7 +12,7 @@ export const useUser = () => {
 
   useEffect(() => {
     if (!auth) {
-      // Firebase might not be initialized yet
+      // Firebase might not be initialized yet by the provider
       setLoading(true);
       return;
     };

@@ -22,7 +22,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     setInstances(firebaseInstances);
   }, []);
 
-  // Don't render children until Firebase is initialized.
+  // Don't render children until Firebase is initialized on the client.
   // This renders a safe, static loading state on the server.
   if (!instances) {
     return (
