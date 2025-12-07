@@ -12,6 +12,13 @@ jest.mock('next/link', () => {
     };
 });
 
+// Mock the next/image component
+jest.mock('next/image', () => {
+    return ({ src, alt }: { src: string, alt: string}) => {
+        return <img src={src} alt={alt} />;
+    };
+});
+
 // Mock the GuideModal component
 jest.mock('../GuideModal', () => ({
     GuideModal: ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void}) => 
@@ -36,11 +43,13 @@ const mockUser = {
 
 describe('Header component', () => {
   const mockLogout = jest.fn();
+  const mockOpenGuide = jest.fn();
+  const mockSignIn = jest.fn();
 
   it('renders the logo and title correctly', () => {
     render(
         <ThemeProvider>
-            <Header user={null} onLogout={mockLogout} />
+            <Header user={null} plan={null} onLogout={mockLogout} onOpenGuide={mockOpenGuide} onSignIn={mockSignIn} />
         </ThemeProvider>
     );
 
@@ -58,21 +67,21 @@ describe('Header component', () => {
     expect(notText).toBeInTheDocument();
   });
 
-  it('renders the subtitle and guide button', () => {
+  it('renders sign in button when logged out', () => {
     render(
         <ThemeProvider>
-            <Header user={null} onLogout={mockLogout} />
+            <Header user={null} plan={null} onLogout={mockLogout} onOpenGuide={mockOpenGuide} onSignIn={mockSignIn} />
         </ThemeProvider>
     );
 
     expect(screen.getByText('The Sustainable System for Long-Term Creators.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Read The Guide/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
   it('does not show the user avatar dropdown when logged out', () => {
     render(
         <ThemeProvider>
-            <Header user={null} onLogout={mockLogout} />
+            <Header user={null} plan={null} onLogout={mockLogout} onOpenGuide={mockOpenGuide} onSignIn={mockSignIn} />
         </ThemeProvider>
     );
 
@@ -82,7 +91,7 @@ describe('Header component', () => {
   it('shows the user avatar dropdown when logged in', () => {
     render(
         <ThemeProvider>
-            <Header user={mockUser} onLogout={mockLogout} />
+            <Header user={mockUser} plan="builder" onLogout={mockLogout} onOpenGuide={mockOpenGuide} onSignIn={mockSignIn} />
         </ThemeProvider>
     );
     const avatarButton = screen.getByRole('button');
@@ -91,3 +100,5 @@ describe('Header component', () => {
     expect(screen.getByText('T')).toBeInTheDocument();
   });
 });
+
+    
