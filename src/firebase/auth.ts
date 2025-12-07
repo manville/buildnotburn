@@ -1,26 +1,24 @@
+
 'use client';
-import { getAuth, sendSignInLinkToEmail, GoogleAuthProvider, signInWithPopup, UserCredential, User } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { initializeFirebase } from ".";
+import type { Auth, User, UserCredential } from "firebase/auth";
+import { GoogleAuthProvider, sendSignInLinkToEmail, signInWithPopup } from "firebase/auth";
+import type { Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
-
-export const sendSignInLink = async (email: string) => {
+export const sendSignInLink = async (auth: Auth, email: string) => {
     const actionCodeSettings = {
         url: `${window.location.origin}/login`,
         handleCodeInApp: true,
     };
-    const { auth } = initializeFirebase();
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
 };
 
-export const signInWithGoogle = async (): Promise<UserCredential> => {
-    const { auth } = initializeFirebase();
+export const signInWithGoogle = async (auth: Auth): Promise<UserCredential> => {
     const provider = new GoogleAuthProvider();
     return await signInWithPopup(auth, provider);
 }
 
-export const getOrCreateUser = async (user: User) => {
-    const { db } = initializeFirebase();
+export const getOrCreateUser = async (db: Firestore, user: User) => {
     const userRef = doc(db, `users/${user.uid}`);
     const userDoc = await getDoc(userRef);
 
