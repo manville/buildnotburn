@@ -24,10 +24,6 @@
           "format": "uri",
           "description": "URL of the user's profile picture."
         },
-        "phone": {
-          "type": "string",
-          "description": "The user's phone number."
-        },
         "plan": {
           "type": "string",
           "description": "The user's subscription plan (e.g., trial, builder, architect).",
@@ -110,13 +106,10 @@
             "properties": {
                 "email": {"type": "string"},
                 "plan": {"type": "string", "enum": ["builder", "architect"]},
-                "displayName": {"type": "string"},
-                "phone": {"type": "string"}
+                "displayName": {"type": "string"}
             }
         },
         "description": "Temporary storage for user data during checkout."
     }
   }
 }
-
-    

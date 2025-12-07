@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
@@ -29,8 +30,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-            {children}
-            <Toaster />
+            <FirebaseClientProvider>
+                {children}
+                <Toaster />
+            </FirebaseClientProvider>
         </ThemeProvider>
         <Script async defer src="https://withcabin.com/hello.js" />
       </body>

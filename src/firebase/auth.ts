@@ -1,4 +1,3 @@
-
 'use client';
 import type { Auth, User, UserCredential } from "firebase/auth";
 import { GoogleAuthProvider, sendSignInLinkToEmail, signInWithPopup } from "firebase/auth";
@@ -15,10 +14,6 @@ export const sendSignInLink = async (auth: Auth, email: string) => {
 
 export const signInWithGoogle = async (auth: Auth): Promise<UserCredential> => {
     const provider = new GoogleAuthProvider();
-    // Use the specific Web Client ID provided by the user.
-    provider.setCustomParameters({
-        client_id: '40669818344-8d67kfttike1kjrp274gct7plbp1lf8l.apps.googleusercontent.com'
-    });
     return await signInWithPopup(auth, provider);
 }
 

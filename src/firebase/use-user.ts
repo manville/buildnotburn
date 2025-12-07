@@ -27,5 +27,3 @@ export const useUser = () => {
 
   return { user, loading };
 };
-
-    

@@ -22,10 +22,9 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     setInstances(firebaseInstances);
   }, []);
 
-  // Don't render children until Firebase is initialized
+  // Don't render children until Firebase is initialized.
+  // This renders a safe, static loading state on the server.
   if (!instances) {
-    // Render a minimal, dependency-free loading state.
-    // This prevents circular dependencies and ensures the server can build the page.
     return (
        <div className="w-full min-h-screen flex items-center justify-center font-code text-muted-foreground">
           INITIALIZING SYSTEMS...

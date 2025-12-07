@@ -1,3 +1,4 @@
+
 // The configuration is now loaded from environment variables.
 // Follow the instructions in the .env.example file to set up your .env file.
 
