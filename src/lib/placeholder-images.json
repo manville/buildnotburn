@@ -3,17 +3,17 @@
     {
       "id": "paywall-community",
       "description": "An image representing the free community tier.",
-      "imageUrl": "/community.png"
+      "imageUrl": "/paywall-community.png"
     },
     {
       "id": "paywall-builder",
       "description": "An image representing the Builder plan.",
-      "imageUrl": "/builder.png"
+      "imageUrl": "/paywall-builder.png"
     },
     {
       "id": "paywall-architect",
       "description": "An image representing the Architect plan.",
-      "imageUrl": "/architect.png"
+      "imageUrl": "/paywall-architect.png"
     }
   ]
 }
