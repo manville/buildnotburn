@@ -90,6 +90,11 @@ export default function BuildNotBurnApp() {
     };
   }, [user, db, userLoading]);
 
+  const focusedBrick = useMemo(() => {
+    if (!focusedBrickId) return null;
+    return bricks.find(b => b.id === focusedBrickId) || null;
+  }, [focusedBrickId, bricks]);
+
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
@@ -173,26 +178,16 @@ export default function BuildNotBurnApp() {
     // The local reordering provides immediate UX feedback.
     // await batch.commit();
   };
-
   
-  if (userLoading || isLoading) {
-    return (
-       <main className="container mx-auto max-w-4xl px-4 min-h-screen flex flex-col">
-        <Header user={null} plan={null} onLogout={() => {}} onOpenGuide={() => {}} onSignIn={() => {}} />
+  const renderContent = () => {
+    if (userLoading || isLoading) {
+      return (
         <div className="w-full flex-grow flex items-center justify-center">
            <div className="text-center font-code text-muted-foreground">LOADING SYSTEMS...</div>
         </div>
-      </main>
-    )
-  }
-  
-  const focusedBrick = useMemo(() => {
-    if (!focusedBrickId) return null;
-    return bricks.find(b => b.id === focusedBrickId) || null;
-  }, [focusedBrickId, bricks]);
+      )
+    }
 
-
-  const renderContent = () => {
     if (!user) {
         return <Paywall variantIds={variantIds} />;
     }
