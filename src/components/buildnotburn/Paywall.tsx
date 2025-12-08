@@ -148,6 +148,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       width={600}
                       height={400}
                       className="object-cover aspect-[3/2]"
+                      data-ai-hint={communityImage.aiHint}
                   />
                 </div>
             )}
@@ -195,6 +196,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       width={600}
                       height={400}
                       className="object-cover aspect-[3/2]"
+                      data-ai-hint={builderImage.aiHint}
                   />
                 </div>
             )}
@@ -247,6 +249,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
                       width={600}
                       height={400}
                       className="object-cover aspect-[3/2]"
+                      data-ai-hint={architectImage.aiHint}
                   />
                 </div>
             )}

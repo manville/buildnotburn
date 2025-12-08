@@ -14,18 +14,24 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
+
+const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
 
 const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <div className={cn(className, 'relative flex items-center justify-center')}>
-        <Image 
-            src="/logo.png"
-            alt="BuildNotBurn Logo"
-            width={192}
-            height={192}
-            className="drop-shadow-[0_0_8px_hsl(var(--primary)/0.7)]"
-            priority
-        />
+        {logoImage && (
+            <Image 
+                src={logoImage.imageUrl}
+                alt="BuildNotBurn Logo"
+                width={192}
+                height={192}
+                className="drop-shadow-[0_0_8px_hsl(var(--primary)/0.7)]"
+                priority
+                data-ai-hint={logoImage.aiHint}
+            />
+        )}
     </div>
 );
 
