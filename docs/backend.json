@@ -66,6 +66,10 @@
           "type": "string",
           "description": "The content of the brick."
         },
+        "notes": {
+          "type": "string",
+          "description": "Optional user-added notes for the brick."
+        },
         "isCompleted": {
           "type": "boolean",
           "description": "Whether the brick is completed or not."

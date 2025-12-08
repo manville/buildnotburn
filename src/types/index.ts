@@ -8,6 +8,7 @@ export type Brick = {
   date: string; // YYYY-MM-DD
   userId: string;
   createdAt: FieldValue | string;
+  notes?: string;
 };
 
 export interface AuditAnswers {

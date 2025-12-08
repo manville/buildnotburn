@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/buildnotburn/Header";
 import { GuideModal } from "@/components/buildnotburn/GuideModal";
 import { SignInModal } from "@/components/buildnotburn/SignInModal";
@@ -10,7 +10,7 @@ import { ThemeSwitcher } from "@/components/buildnotburn/ThemeSwitcher";
 import Link from "next/link";
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, onSnapshot, doc, query, orderBy, setDoc, serverTimestamp, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, query, orderBy, setDoc, serverTimestamp, addDoc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import type { Brick } from '@/types';
 import { Paywall, type VariantIds } from "@/components/buildnotburn/Paywall";
 import { EnergyAudit } from "@/components/buildnotburn/EnergyAudit";
@@ -18,7 +18,7 @@ import { MainWorkspace } from "@/components/buildnotburn/MainWorkspace";
 import { generateMockWallBricks } from "@/lib/mock-data";
 import { getTodayString } from "@/lib/mock-data";
 import { playSound } from "@/lib/play-sound";
-
+import { FocusChamber } from "@/components/buildnotburn/FocusChamber";
 
 type Plan = 'trial' | 'builder' | 'architect';
 
@@ -29,6 +29,7 @@ export default function BuildNotBurnApp() {
 
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [focusedBrickId, setFocusedBrickId] = useState<string | null>(null);
 
   const [bricks, setBricks] = useState<Brick[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -140,6 +141,12 @@ export default function BuildNotBurnApp() {
     await deleteDoc(brickRef);
   };
 
+  const updateBrickNotes = async (id: string, notes: string) => {
+    if (!user || !db) return;
+    const brickRef = doc(db, 'users', user.uid, 'bricks', id);
+    await updateDoc(brickRef, { notes });
+  }
+
   const reorderBricks = async (fromId: string, toId: string) => {
     const fromIndex = bricks.findIndex(b => b.id === fromId);
     const toIndex = bricks.findIndex(b => b.id === toId);
@@ -178,6 +185,12 @@ export default function BuildNotBurnApp() {
       </main>
     )
   }
+  
+  const focusedBrick = useMemo(() => {
+    if (!focusedBrickId) return null;
+    return bricks.find(b => b.id === focusedBrickId) || null;
+  }, [focusedBrickId, bricks]);
+
 
   const renderContent = () => {
     if (!user) {
@@ -194,6 +207,7 @@ export default function BuildNotBurnApp() {
       addBrick={addBrick}
       completeBrick={completeBrick}
       burnBrick={burnBrick}
+      onFocusBrick={setFocusedBrickId}
       reorderBricks={reorderBricks}
       onLayMore={handleLayMore}
     />;
@@ -223,6 +237,15 @@ export default function BuildNotBurnApp() {
         <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
       </main>
       <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
+       {focusedBrick && (
+          <FocusChamber
+            brick={focusedBrick}
+            onClose={() => setFocusedBrickId(null)}
+            onComplete={completeBrick}
+            onBurn={burnBrick}
+            onSaveNotes={updateBrickNotes}
+          />
+        )}
     </>
   );
 }

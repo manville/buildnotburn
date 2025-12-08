@@ -16,6 +16,7 @@ interface MainWorkspaceProps {
   addBrick: (text: string) => void;
   completeBrick: (id: string) => void;
   burnBrick: (id: string) => void;
+  onFocusBrick: (id: string) => void;
   reorderBricks: (fromId: string, toId: string) => void;
   onLayMore: () => void;
 }
@@ -26,6 +27,7 @@ export const MainWorkspace: FC<MainWorkspaceProps> = ({
   addBrick,
   completeBrick,
   burnBrick,
+  onFocusBrick,
   reorderBricks,
   onLayMore,
 }) => {
@@ -74,6 +76,7 @@ export const MainWorkspace: FC<MainWorkspaceProps> = ({
             bricks={buildListBricks}
             completeBrick={completeBrick}
             burnBrick={burnBrick}
+            onFocusBrick={onFocusBrick}
             reorderBricks={reorderBricks}
             variant="build"
             maxBricks={maxBricks}

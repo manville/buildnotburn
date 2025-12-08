@@ -1,3 +1,4 @@
+
 "use client";
 import type { FC, DragEvent } from 'react';
 import React, { useState, useRef, useEffect } from 'react';
@@ -11,13 +12,14 @@ interface BrickListProps {
   bricks: Brick[];
   completeBrick?: (id: string) => void;
   burnBrick?: (id: string) => void;
+  onFocusBrick?: (id: string) => void;
   reorderBricks?: (fromId: string, toId: string) => void;
   variant?: 'build' | 'burn';
   maxBricks?: number | null;
   onPlaceholderClick?: (text: string) => void;
 }
 
-export const BrickList: FC<BrickListProps> = ({ bricks, completeBrick, burnBrick, reorderBricks, variant = 'build', maxBricks, onPlaceholderClick }) => {
+export const BrickList: FC<BrickListProps> = ({ bricks, completeBrick, burnBrick, onFocusBrick, reorderBricks, variant = 'build', maxBricks, onPlaceholderClick }) => {
   const isBurnPile = variant === 'burn';
   const dragItemId = useRef<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -84,6 +86,7 @@ export const BrickList: FC<BrickListProps> = ({ bricks, completeBrick, burnBrick
             brick={brick} 
             completeBrick={completeBrick!} 
             burnBrick={burnBrick}
+            onFocusBrick={onFocusBrick}
             readOnly={isBurnPile}
             onDragStart={!isBurnPile ? handleDragStart : undefined}
             onDragEnter={!isBurnPile ? handleDragEnter : undefined}

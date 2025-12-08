@@ -3,7 +3,7 @@ import type { FC, DragEvent } from 'react';
 import React, { useState } from 'react';
 import type { Brick } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Check, Flame } from 'lucide-react';
+import { Check, Flame, Crosshair, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { playSound } from '@/lib/play-sound';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -13,6 +13,7 @@ interface BrickItemProps {
   brick: Brick;
   completeBrick: (id: string) => void;
   burnBrick?: (id: string) => void;
+  onFocusBrick?: (id: string) => void;
   readOnly?: boolean;
   onDragStart?: (e: DragEvent<HTMLLIElement>, id: string) => void;
   onDragEnter?: (e: DragEvent<HTMLLIElement>, id: string) => void;
@@ -46,6 +47,7 @@ export const BrickItem: FC<BrickItemProps> = ({
   brick, 
   completeBrick, 
   burnBrick,
+  onFocusBrick,
   readOnly = false,
   onDragStart,
   onDragEnter,
@@ -114,12 +116,29 @@ export const BrickItem: FC<BrickItemProps> = ({
         )}>
           {brick.text}
         </span>
+        {brick.notes && <MessageSquare className="h-3 w-3 text-muted-foreground/50" />}
       </div>
 
       <div className="flex items-center gap-1">
         <TooltipProvider>
           {isBuilding && (
             <>
+               <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onFocusBrick?.(brick.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-accent"
+                    aria-label={`Focus on brick: ${brick.text}`}
+                  >
+                    <Crosshair className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Focus on Brick</p>
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
