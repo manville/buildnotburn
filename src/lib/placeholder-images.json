@@ -1,12 +1,6 @@
 {
   "placeholderImages": [
     {
-      "id": "logo",
-      "description": "The main logo for BuildNotBurn.",
-      "imageUrl": "https://picsum.photos/seed/bnblogo/192/192",
-      "aiHint": "geometric logo"
-    },
-    {
       "id": "paywall-community",
       "description": "An image representing the free community tier.",
       "imageUrl": "https://picsum.photos/seed/community/600/400",
