@@ -109,8 +109,8 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
           </div>
         </div>
       </div>
-      <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border bg-card">
-        <TooltipProvider delayDuration={0}>
+      <TooltipProvider delayDuration={0}>
+        <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border bg-card">
           <div className="flex w-max space-x-1.5 p-4 h-48 items-end">
             {wallData.map(({ date, completedBricks, totalCompleted }) => (
               <Tooltip key={date}>
@@ -151,9 +151,9 @@ export const Wall: FC<WallProps> = ({ bricks }) => {
               </Tooltip>
             ))}
           </div>
-        </TooltipProvider>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </TooltipProvider>
     </section>
   );
 };
