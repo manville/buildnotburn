@@ -3,26 +3,20 @@
     {
       "id": "paywall-community",
       "description": "An image representing the free community tier.",
-      "imageUrl": "/paywall-community.png",
+      "imageUrl": "https://picsum.photos/seed/community/600/400",
       "aiHint": "community gathering"
     },
     {
       "id": "paywall-builder",
       "description": "An image representing the Builder plan.",
-      "imageUrl": "/paywall-builder.png",
+      "imageUrl": "https://picsum.photos/seed/builder/600/400",
       "aiHint": "tools construction"
     },
     {
       "id": "paywall-architect",
       "description": "An image representing the Architect plan.",
-      "imageUrl": "/paywall-architect.png",
+      "imageUrl": "https://picsum.photos/seed/architect/600/400",
       "aiHint": "blueprints design"
-    },
-    {
-      "id": "logo",
-      "description": "The BuildNotBurn Logo",
-      "imageUrl": "https://picsum.photos/seed/logo/100/100",
-      "aiHint": "logo flame"
     }
   ]
 }
