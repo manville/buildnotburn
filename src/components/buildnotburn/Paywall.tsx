@@ -94,7 +94,7 @@ export const Paywall: FC<PaywallProps> = ({ variantIds }) => {
       const checkoutResponse = await createLemonSqueezyCheckout({
         variantId: planDetails.variantId,
         email: email,
-        name: name,
+        name: plan === 'trial' ? '' : name,
         userId: userId,
         plan: plan,
       });
