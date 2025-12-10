@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export const sendSignInLink = async (auth: Auth, email: string) => {
     const actionCodeSettings = {
-        url: `${window.location.origin}/login`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/login`,
         handleCodeInApp: true,
     };
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
