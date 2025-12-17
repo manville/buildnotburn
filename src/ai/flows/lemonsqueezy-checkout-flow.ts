@@ -44,30 +44,30 @@ const createCheckoutUrlFlow = ai.defineFlow(
         const isFreeTier = plan === 'trial';
         const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/checkout/success`;
 
-        // Conditionally build attributes. For free products, LS doesn't want checkout_data with email/name.
-        const attributes: { redirect_url: string; checkout_data?: any } = {
-            redirect_url: redirectUrl,
-        };
-        
-        const customData = {
-            user_id: userId,
-            plan: plan,
+        // Build the minimal payload - LemonSqueezy only requires store and variant
+        // DO NOT add attributes unless you know they're supported
+        const payload: any = {
+            data: {
+                type: 'checkouts',
+                relationships: {
+                    store: {
+                        data: {
+                            type: 'stores',
+                            id: String(storeId),
+                        },
+                    },
+                    variant: {
+                        data: {
+                            type: 'variants',
+                            id: String(variantId),
+                        },
+                    },
+                },
+            },
         };
 
-        if (isFreeTier) {
-            // For free products, only send custom data. Lemon Squeezy handles email collection.
-             attributes.checkout_data = {
-                custom: customData,
-            };
-        } else {
-            // For paid products, pre-fill user info.
-            attributes.checkout_data = {
-                email: email,
-                name: name,
-                custom: customData,
-            };
-        }
-
+        // Log the payload for debugging
+        console.log('LemonSqueezy Checkout Request:', JSON.stringify(payload, null, 2));
 
         const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
             method: 'POST',
@@ -76,33 +76,16 @@ const createCheckoutUrlFlow = ai.defineFlow(
                 'Content-Type': 'application/vnd.api+json',
                 'Authorization': `Bearer ${apiKey}`,
             },
-            body: JSON.stringify({
-                data: {
-                    type: 'checkouts',
-                    attributes: attributes,
-                    relationships: {
-                        store: {
-                            data: {
-                                type: 'stores',
-                                id: storeId,
-                            },
-                        },
-                        variant: {
-                            data: {
-                                type: 'variants',
-                                id: variantId,
-                            },
-                        },
-                    },
-                },
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
             const error = await response.json();
             console.error("Lemon Squeezy API Error:", error);
+            console.error("Request Payload:", JSON.stringify(payload, null, 2));
             const errorDetail = error.errors?.[0]?.detail || response.statusText;
-            throw new Error(`Failed to create checkout: ${errorDetail}`);
+            const errorSource = error.errors?.[0]?.source?.pointer || 'unknown field';
+            throw new Error(`Failed to create checkout: ${errorDetail} (at ${errorSource})`);
         }
 
         const checkout = await response.json();
